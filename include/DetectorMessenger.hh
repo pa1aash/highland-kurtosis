@@ -28,6 +28,7 @@ private:
     G4UIcmdWithADoubleAndUnit* fSampleThickCmd;
     G4UIcmdWithADoubleAndUnit* fSampleWidthCmd;
     G4UIcmdWithAString*        fSTLFileCmd;
+    G4UIcmdWithAString*        fMaterialCmd;
 };
 
 #endif

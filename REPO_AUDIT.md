@@ -476,10 +476,9 @@ Path-length distributions for 1M rays each:
 - The parameter is independent of lattice geometry
 
 ### Gap 2: Switch material from PLA to silicon or tungsten
-- **Status: NOT SUPPORTED**
-- **File:** `src/DetectorConstruction.cc` (line 40-54, `DefineMaterials()`)
-- **Change needed:** Add silicon (`G4_Si`) and tungsten (`G4_W`) materials from NIST. Add a `fMaterialName` string member, a `/MCS/det/material` messenger command, and a setter that selects the active material. Update all geometry constructors to use the selected material instead of hardcoded `fPLA`.
-- **Estimated scope:** ~50 lines in DetectorConstruction, ~15 lines in DetectorMessenger
+- **Status: IMPLEMENTED**
+- **Files:** `src/DetectorConstruction.cc`, `src/DetectorMessenger.cc`, `include/DetectorConstruction.hh`, `include/DetectorMessenger.hh`
+- **Details:** Added `fSilicon` (`G4_Si`, 2.33 g/cm3, X0=93.7 mm), `fTungsten` (`G4_W`, 19.3 g/cm3, X0=3.5 mm) via NIST manager. `fTargetMaterial` pointer selects active material (default PLA). `/MCS/det/material` command (candidates: PLA, silicon, tungsten) sets material via `SetMaterial()`. All six geometry constructors and `PlaceWallSlab` use `fTargetMaterial` instead of hardcoded `fPLA`. Volume names unchanged — SteppingAction volume detection unaffected.
 
 ### Gap 3: Switch particle from electron to muon
 - **Status: NOT SUPPORTED**

@@ -38,8 +38,10 @@ public:
     void SetSampleThickness(G4double thick);
     void SetSampleWidth(G4double width);
     void SetSTLFile(const G4String& filename);
+    void SetMaterial(const G4String& name);
 
     GeometryType GetGeometryType() const { return fGeometryType; }
+    G4String GetMaterialName() const { return fMaterialName; }
     G4double GetInfillPercent() const { return fInfillPercent; }
     G4double GetSampleThickness() const { return fSampleThickness; }
     G4LogicalVolume* GetTargetLogical() const { return fLogicTarget; }
@@ -59,7 +61,11 @@ private:
                        const G4String& name, G4int copyNo);
 
     G4Material* fPLA;
+    G4Material* fSilicon;
+    G4Material* fTungsten;
+    G4Material* fTargetMaterial;
     G4Material* fAir;
+    G4String fMaterialName;
 
     GeometryType fGeometryType;
     G4double fInfillPercent;

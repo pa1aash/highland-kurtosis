@@ -59,7 +59,7 @@ File: `{fileName}.root`, tree name: `scattering`
 - **MCS model:** WentzelVI + single Coulomb scattering
 - **Step control:** RangeFactor=0.04, MaxStep=0.1mm, StepLimitType=UseSafetyPlus, Skin=3
 - **Production cuts:** 1.0mm global, 0.1mm in target region
-- **Material:** PLA (C₃H₄O₂)ₙ, ρ=1.24 g/cm³, X₀≈315mm
+- **Material:** PLA (C₃H₄O₂)ₙ ρ=1.24 g/cm³ X₀≈315mm (default), silicon (G4_Si) ρ=2.33 g/cm³ X₀=93.7mm, tungsten (G4_W) ρ=19.3 g/cm³ X₀=3.5mm — selectable via `/MCS/det/material`
 - **Particle:** e⁻ (hardcoded), default 4 GeV
 - **Beam:** Gaussian spot σ=5mm, direction +z, origin z=-50mm
 
@@ -67,6 +67,7 @@ File: `{fileName}.root`, tree name: `scattering`
 
 ```
 /MCS/det/geometry solid|air|rectilinear|honeycomb|gyroid|cubic|voronoi
+/MCS/det/material PLA|silicon|tungsten
 /MCS/det/infill 40              # percent
 /MCS/det/sampleThickness 10 mm
 /MCS/det/cellSize 4.0 mm

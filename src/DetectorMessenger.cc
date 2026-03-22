@@ -52,6 +52,12 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
     fSTLFileCmd->SetGuidance("Path to STL file for gyroid/voronoi geometry.");
     fSTLFileCmd->SetParameterName("filename", false);
     fSTLFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+    fMaterialCmd = new G4UIcmdWithAString("/MCS/det/material", this);
+    fMaterialCmd->SetGuidance("Target material: PLA silicon tungsten");
+    fMaterialCmd->SetParameterName("material", false);
+    fMaterialCmd->SetCandidates("PLA silicon tungsten");
+    fMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger()
@@ -63,6 +69,7 @@ DetectorMessenger::~DetectorMessenger()
     delete fSampleThickCmd;
     delete fSampleWidthCmd;
     delete fSTLFileCmd;
+    delete fMaterialCmd;
     delete fDetDir;
 }
 
@@ -88,5 +95,8 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
     }
     else if (command == fSTLFileCmd) {
         fDetector->SetSTLFile(newValue);
+    }
+    else if (command == fMaterialCmd) {
+        fDetector->SetMaterial(newValue);
     }
 }

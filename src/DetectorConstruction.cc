@@ -25,7 +25,9 @@
 #include <vector>
 
 DetectorConstruction::DetectorConstruction()
-    : G4VUserDetectorConstruction(), fPLA(nullptr), fAir(nullptr),
+    : G4VUserDetectorConstruction(), fPLA(nullptr), fSilicon(nullptr),
+      fTungsten(nullptr), fTargetMaterial(nullptr), fAir(nullptr),
+      fMaterialName("PLA"),
       fGeometryType(GeometryType::kSolidPLA), fInfillPercent(100.0),
       fCellSize(4.0 * mm), fWallThickness(0.4 * mm),
       fSampleThickness(10.0 * mm), fSampleWidth(20.0 * mm), fSTLFile(""),
@@ -46,10 +48,17 @@ void DetectorConstruction::DefineMaterials() {
   fPLA->AddElement(nist->FindOrBuildElement("H"), 4);
   fPLA->AddElement(nist->FindOrBuildElement("O"), 2);
 
+  fSilicon = nist->FindOrBuildMaterial("G4_Si");
+  fTungsten = nist->FindOrBuildMaterial("G4_W");
+
+  fTargetMaterial = fPLA;
+
   G4cout << "PLA X0 = " << fPLA->GetRadlen() / cm << " cm ("
          << fPLA->GetRadlen() / mm << " mm)" << G4endl;
   G4cout << "PLA density = " << fPLA->GetDensity() / (g / cm3) << " g/cm3"
          << G4endl;
+  G4cout << "Si  X0 = " << fSilicon->GetRadlen() / mm << " mm" << G4endl;
+  G4cout << "W   X0 = " << fTungsten->GetRadlen() / mm << " mm" << G4endl;
   G4cout << "Air X0 = " << fAir->GetRadlen() / m << " m" << G4endl;
 }
 
@@ -114,6 +123,25 @@ void DetectorConstruction::SetSTLFile(const G4String &f) {
     G4RunManager::GetRunManager()->ReinitializeGeometry();
 }
 
+void DetectorConstruction::SetMaterial(const G4String &name) {
+  if (name == "PLA") {
+    fTargetMaterial = fPLA;
+  } else if (name == "silicon") {
+    fTargetMaterial = fSilicon;
+  } else if (name == "tungsten") {
+    fTargetMaterial = fTungsten;
+  } else {
+    G4cerr << "ERROR: Unknown material '" << name << "'" << G4endl;
+    G4cerr << "Valid: PLA silicon tungsten" << G4endl;
+    return;
+  }
+  fMaterialName = name;
+  G4cout << ">>> Target material set to " << name
+         << " (X0=" << fTargetMaterial->GetRadlen() / mm << " mm)" << G4endl;
+  if (fConstructed)
+    G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
 G4VPhysicalVolume *DetectorConstruction::Construct() {
   G4VPhysicalVolume *physWorld = ConstructWorld();
 
@@ -168,7 +196,7 @@ void DetectorConstruction::PlaceWallSlab(G4double halfX, G4double halfY,
                                          G4RotationMatrix *rot,
                                          const G4String &name, G4int copyNo) {
   G4Box *solid = new G4Box(name, halfX, halfY, halfZ);
-  G4LogicalVolume *logic = new G4LogicalVolume(solid, fPLA, name);
+  G4LogicalVolume *logic = new G4LogicalVolume(solid, fTargetMaterial, name);
   logic->SetUserLimits(new G4UserLimits(0.1 * mm));
   auto *vis = new G4VisAttributes(G4Colour(0.8, 0.6, 0.2, 0.5));
   vis->SetForceSolid(true);
@@ -183,7 +211,7 @@ void DetectorConstruction::ConstructSolidPLA() {
   G4double halfT = fSampleThickness / 2.0;
 
   G4Box *solid = new G4Box("SolidPLA", halfW, halfW, halfT);
-  fLogicPLABlock = new G4LogicalVolume(solid, fPLA, "SolidPLA");
+  fLogicPLABlock = new G4LogicalVolume(solid, fTargetMaterial, "SolidPLA");
   fLogicPLABlock->SetUserLimits(new G4UserLimits(0.1 * mm));
 
   auto *vis = new G4VisAttributes(G4Colour(0.8, 0.6, 0.2, 0.7));
@@ -198,7 +226,8 @@ void DetectorConstruction::ConstructSolidPLA() {
 
   G4cout << ">>> Solid PLA: " << fSampleWidth / mm << " x " << fSampleWidth / mm
          << " x " << fSampleThickness / mm << " mm^3"
-         << ", x/X0 = " << fSampleThickness / fPLA->GetRadlen() << G4endl;
+         << ", x/X0 = " << fSampleThickness / fTargetMaterial->GetRadlen()
+         << " (" << fMaterialName << ")" << G4endl;
 }
 
 void DetectorConstruction::ConstructRectilinearLattice() {
@@ -214,7 +243,7 @@ void DetectorConstruction::ConstructRectilinearLattice() {
 
   if (fInfillPercent >= 100.0) {
     G4Box *sf = new G4Box("PLAFill", halfW, halfW, halfT);
-    G4LogicalVolume *lf = new G4LogicalVolume(sf, fPLA, "PLAFill");
+    G4LogicalVolume *lf = new G4LogicalVolume(sf, fTargetMaterial, "PLAFill");
     lf->SetUserLimits(new G4UserLimits(0.1 * mm));
     new G4PVPlacement(nullptr, G4ThreeVector(), lf, "PLAFill", fLogicTarget,
                       false, 0, true);
@@ -257,7 +286,7 @@ void DetectorConstruction::ConstructHoneycombLattice() {
 
   if (fInfillPercent >= 100.0) {
     G4Box *sf = new G4Box("PLAFill", halfW, halfW, halfT);
-    G4LogicalVolume *lf = new G4LogicalVolume(sf, fPLA, "PLAFill");
+    G4LogicalVolume *lf = new G4LogicalVolume(sf, fTargetMaterial, "PLAFill");
     lf->SetUserLimits(new G4UserLimits(0.1 * mm));
     new G4PVPlacement(nullptr, G4ThreeVector(), lf, "PLAFill", fLogicTarget,
                       false, 0, true);
@@ -353,7 +382,7 @@ G4int nPy = nPx;
 G4double halfPx = pixelSize / 2.0;
 
 G4Box *solidVox = new G4Box("HCVox", halfPx, halfPx, halfT);
-G4LogicalVolume *logicVox = new G4LogicalVolume(solidVox, fPLA, "HCVoxPLA");
+G4LogicalVolume *logicVox = new G4LogicalVolume(solidVox, fTargetMaterial, "HCVoxPLA");
 logicVox->SetUserLimits(new G4UserLimits(0.5 * mm));
 auto *vis = new G4VisAttributes(G4Colour(0.8, 0.6, 0.2, 0.5));
 vis->SetForceSolid(true);
@@ -430,7 +459,7 @@ void DetectorConstruction::ConstructGyroidLattice() {
 
   if (fInfillPercent >= 100.0) {
     G4Box *sf = new G4Box("PLAFill", halfW, halfW, halfT);
-    G4LogicalVolume *lf = new G4LogicalVolume(sf, fPLA, "PLAFill");
+    G4LogicalVolume *lf = new G4LogicalVolume(sf, fTargetMaterial, "PLAFill");
     lf->SetUserLimits(new G4UserLimits(0.1 * mm));
     new G4PVPlacement(nullptr, G4ThreeVector(), lf, "PLAFill", fLogicTarget,
                       false, 0, true);
@@ -444,7 +473,7 @@ void DetectorConstruction::ConstructGyroidLattice() {
     mesh->SetScale(mm);
     mesh->SetOffset(G4ThreeVector(-halfW, -halfW, -halfT));
     G4VSolid *solidG = mesh->GetSolid();
-    G4LogicalVolume *logicG = new G4LogicalVolume(solidG, fPLA, "Gyroid");
+    G4LogicalVolume *logicG = new G4LogicalVolume(solidG, fTargetMaterial, "Gyroid");
     logicG->SetUserLimits(new G4UserLimits(0.1 * mm));
     auto *vis = new G4VisAttributes(G4Colour(0.2, 0.7, 0.3, 0.5));
     vis->SetForceSolid(true);
@@ -499,7 +528,7 @@ void DetectorConstruction::ConstructGyroidLattice() {
 
   G4double halfV = voxelSize / 2.0;
   G4Box *solidVox = new G4Box("GVox", halfV, halfV, halfV);
-  G4LogicalVolume *logicVox = new G4LogicalVolume(solidVox, fPLA, "GVoxPLA");
+  G4LogicalVolume *logicVox = new G4LogicalVolume(solidVox, fTargetMaterial, "GVoxPLA");
   logicVox->SetUserLimits(new G4UserLimits(voxelSize * 0.5));
   auto *vis = new G4VisAttributes(G4Colour(0.2, 0.7, 0.3, 0.3));
   vis->SetForceSolid(true);
@@ -543,7 +572,7 @@ void DetectorConstruction::ConstructCubicLattice() {
 
   if (fInfillPercent >= 100.0) {
     G4Box *sf = new G4Box("PLAFill", halfW, halfW, halfT);
-    G4LogicalVolume *lf = new G4LogicalVolume(sf, fPLA, "PLAFill");
+    G4LogicalVolume *lf = new G4LogicalVolume(sf, fTargetMaterial, "PLAFill");
     lf->SetUserLimits(new G4UserLimits(0.1 * mm));
     new G4PVPlacement(nullptr, G4ThreeVector(), lf, "PLAFill", fLogicTarget,
                       false, 0, true);
@@ -693,7 +722,7 @@ void DetectorConstruction::ConstructVoronoiLattice() {
 
   if (fInfillPercent >= 100.0) {
     G4Box *sf = new G4Box("PLAFill", halfW, halfW, halfT);
-    G4LogicalVolume *lf = new G4LogicalVolume(sf, fPLA, "PLAFill");
+    G4LogicalVolume *lf = new G4LogicalVolume(sf, fTargetMaterial, "PLAFill");
     lf->SetUserLimits(new G4UserLimits(0.1 * mm));
     new G4PVPlacement(nullptr, G4ThreeVector(), lf, "PLAFill", fLogicTarget,
                       false, 0, true);
@@ -707,7 +736,7 @@ void DetectorConstruction::ConstructVoronoiLattice() {
     mesh->SetScale(mm);
     mesh->SetOffset(G4ThreeVector(-halfW, -halfW, -halfT));
     G4VSolid *solidV = mesh->GetSolid();
-    G4LogicalVolume *logicV = new G4LogicalVolume(solidV, fPLA, "Voronoi");
+    G4LogicalVolume *logicV = new G4LogicalVolume(solidV, fTargetMaterial, "Voronoi");
     logicV->SetUserLimits(new G4UserLimits(0.1 * mm));
     auto *vis = new G4VisAttributes(G4Colour(0.7, 0.3, 0.7, 0.5));
     vis->SetForceSolid(true);
@@ -804,7 +833,7 @@ void DetectorConstruction::ConstructVoronoiLattice() {
 
   G4double halfV = voxelSize / 2.0;
   G4Box *solidVox = new G4Box("VVox", halfV, halfV, halfV);
-  G4LogicalVolume *logicVox = new G4LogicalVolume(solidVox, fPLA, "VVoxPLA");
+  G4LogicalVolume *logicVox = new G4LogicalVolume(solidVox, fTargetMaterial, "VVoxPLA");
   logicVox->SetUserLimits(new G4UserLimits(voxelSize * 0.5));
   auto *vis = new G4VisAttributes(G4Colour(0.7, 0.3, 0.7, 0.3));
   vis->SetForceSolid(true);
