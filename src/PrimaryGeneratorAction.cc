@@ -10,6 +10,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
       fGun(nullptr),
       fBeamSigmaXY(5.0*mm),
       fUsePencilBeam(false),
+      fParticleName("e-"),
       fMessenger(nullptr)
 {
     fGun = new G4ParticleGun(1);
@@ -49,6 +50,19 @@ G4double PrimaryGeneratorAction::GetBeamEnergy() const
     return fGun->GetParticleEnergy();
 }
 
+void PrimaryGeneratorAction::SetParticle(const G4String& name)
+{
+    G4ParticleDefinition* particle =
+        G4ParticleTable::GetParticleTable()->FindParticle(name);
+    if (particle) {
+        fGun->SetParticleDefinition(particle);
+        fParticleName = name;
+    } else {
+        G4cerr << "*** PrimaryGeneratorAction::SetParticle: particle \""
+               << name << "\" not found in G4ParticleTable." << G4endl;
+    }
+}
+
 void PrimaryGeneratorAction::DefineCommands()
 {
     fMessenger = new G4GenericMessenger(this, "/MCS/gun/",
@@ -59,4 +73,9 @@ void PrimaryGeneratorAction::DefineCommands()
 
     fMessenger->DeclarePropertyWithUnit("beamSigma", "mm", fBeamSigmaXY,
         "Gaussian beam spot sigma (default 5 mm)");
+
+    auto& particleCmd = fMessenger->DeclareMethod("particle",
+        &PrimaryGeneratorAction::SetParticle,
+        "Primary particle type (default e-)");
+    particleCmd.SetCandidates("e- mu-");
 }

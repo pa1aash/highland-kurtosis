@@ -481,19 +481,14 @@ Path-length distributions for 1M rays each:
 - **Details:** Added `fSilicon` (`G4_Si`, 2.33 g/cm3, X0=93.7 mm), `fTungsten` (`G4_W`, 19.3 g/cm3, X0=3.5 mm) via NIST manager. `fTargetMaterial` pointer selects active material (default PLA). `/MCS/det/material` command (candidates: PLA, silicon, tungsten) sets material via `SetMaterial()`. All six geometry constructors and `PlaceWallSlab` use `fTargetMaterial` instead of hardcoded `fPLA`. Volume names unchanged — SteppingAction volume detection unaffected.
 
 ### Gap 3: Switch particle from electron to muon
-- **Status: NOT SUPPORTED**
-- **File:** `src/PrimaryGeneratorAction.cc` (line 17-19)
-- **Change needed:** Add a `fParticleName` string member, a `/MCS/gun/particle` messenger command. In constructor, keep electron as default. In setter, use `G4ParticleTable::FindParticle(name)` to switch. The Highland formula in analysis scripts assumes beta≈1 which is fine for both 4 GeV electrons and muons.
-- **Estimated scope:** ~20 lines in PrimaryGeneratorAction
+- **Status: IMPLEMENTED (Session 3)**
+- **Files:** `src/PrimaryGeneratorAction.cc`, `include/PrimaryGeneratorAction.hh`
+- **Details:** Added `fParticleName` member (default `"e-"`), `SetParticle(const G4String& name)` method using `G4ParticleTable::FindParticle(name)`, and `/MCS/gun/particle` messenger command (candidates: `e-`, `mu-`). `GetParticleName()` getter available for analysis scripts. Electron remains the default.
 
-### Gap 4: Switch EM physics from option4 to option0 or option3
-- **Status: NOT SUPPORTED**
-- **File:** `src/PhysicsList.cc` (line 24)
-- **Change needed:** The EM physics is registered in the constructor with `new G4EmStandardPhysics_option4()`. This cannot be changed at runtime because physics lists are constructed before `/run/initialize`. Options:
-  - Add a constructor parameter and set it from `main()` via a command-line flag
-  - Or use `G4PhysListFactory` with a string name
-  - Or add `ReplacePhysics()` in a pre-init messenger command (complex)
-- **Estimated scope:** ~40 lines across PhysicsList.cc and MCSHighland.cc
+### ~~Gap 4: Switch EM physics from option4 to option0 or option3~~
+- **Status: IMPLEMENTED (Session 3)**
+- **Files:** `MCSHighland.cc`, `src/PhysicsList.cc`, `include/PhysicsList.hh`
+- **Details:** Added optional third command-line argument `emOption` (0, 3, or 4; default 4). `MCSHighland.cc` parses `argv[3]` and passes it to the `PhysicsList(G4int emOption)` constructor. The constructor switches on the value to register `G4EmStandardPhysics` (option0, Urban MCS), `G4EmStandardPhysics_option3`, or `G4EmStandardPhysics_option4` (EMZ/WentzelVI). Selected option is printed at startup.
 
 ### Gap 5: Build stacked independent layers (N rectilinear layers with random phase offsets)
 - **Status: NOT SUPPORTED in Geant4** (only in ray-trace code)

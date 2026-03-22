@@ -8,7 +8,7 @@ class G4GenericMessenger;
 class PhysicsList : public G4VModularPhysicsList
 {
 public:
-    PhysicsList();
+    PhysicsList(G4int emOption = 4);
     ~PhysicsList() override;
 
     void ConstructParticle() override;

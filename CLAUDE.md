@@ -19,9 +19,11 @@ make -j$(sysctl -n hw.ncpu)        # macOS
 
 ```bash
 cd build
-./MCSHighland ../macros/run_solid_control.mac          # batch mode
-./MCSHighland ../macros/run_solid_control.mac 12345     # with seed
-./MCSHighland                                           # interactive (vis.mac)
+./MCSHighland ../macros/run_solid_control.mac              # batch mode
+./MCSHighland ../macros/run_solid_control.mac 12345        # with seed
+./MCSHighland ../macros/run_solid_control.mac 12345 0      # with seed + EM option0 (Urban)
+./MCSHighland ../macros/run_solid_control.mac 12345 3      # with seed + EM option3
+./MCSHighland                                              # interactive (vis.mac)
 ```
 
 Macros configure geometry, beam, and output via `/MCS/...` commands before `/run/initialize`.
@@ -55,12 +57,12 @@ File: `{fileName}.root`, tree name: `scattering`
 
 ## Physics settings
 
-- **EM physics:** G4EmStandardPhysics_option4 (EMZ) — hardcoded
+- **EM physics:** G4EmStandardPhysics_option4 (EMZ) default; selectable via command-line arg (0=Urban, 3=option3, 4=option4)
 - **MCS model:** WentzelVI + single Coulomb scattering
 - **Step control:** RangeFactor=0.04, MaxStep=0.1mm, StepLimitType=UseSafetyPlus, Skin=3
 - **Production cuts:** 1.0mm global, 0.1mm in target region
 - **Material:** PLA (C₃H₄O₂)ₙ ρ=1.24 g/cm³ X₀≈315mm (default), silicon (G4_Si) ρ=2.33 g/cm³ X₀=93.7mm, tungsten (G4_W) ρ=19.3 g/cm³ X₀=3.5mm — selectable via `/MCS/det/material`
-- **Particle:** e⁻ (hardcoded), default 4 GeV
+- **Particle:** e⁻ or μ⁻ — selectable via `/MCS/gun/particle` (default e⁻), 4 GeV
 - **Beam:** Gaussian spot σ=5mm, direction +z, origin z=-50mm
 
 ## Key macro commands
@@ -75,6 +77,7 @@ File: `{fileName}.root`, tree name: `scattering`
 /MCS/output/fileName MCSOutput
 /MCS/gun/pencilBeam false
 /MCS/gun/beamSigma 5 mm
+/MCS/gun/particle e-|mu-
 /MCS/phys/rangeFactor 0.04
 /gun/energy 4 GeV               # Geant4 built-in
 ```

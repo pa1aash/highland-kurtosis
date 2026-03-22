@@ -1,5 +1,7 @@
 #include "PhysicsList.hh"
 
+#include "G4EmStandardPhysics.hh"
+#include "G4EmStandardPhysics_option3.hh"
 #include "G4EmStandardPhysics_option4.hh"
 #include "G4EmExtraPhysics.hh"
 #include "G4DecayPhysics.hh"
@@ -13,7 +15,7 @@
 #include "G4SystemOfUnits.hh"
 #include "G4GenericMessenger.hh"
 
-PhysicsList::PhysicsList()
+PhysicsList::PhysicsList(G4int emOption)
     : G4VModularPhysicsList(),
       fRangeFactor(0.04),
       fMscStepMax(0.1*mm),
@@ -21,7 +23,21 @@ PhysicsList::PhysicsList()
 {
     SetVerboseLevel(1);
 
-    RegisterPhysics(new G4EmStandardPhysics_option4());
+    switch (emOption) {
+        case 0:
+            RegisterPhysics(new G4EmStandardPhysics());
+            G4cout << ">>> EM physics: G4EmStandardPhysics (option0, Urban MCS)" << G4endl;
+            break;
+        case 3:
+            RegisterPhysics(new G4EmStandardPhysics_option3());
+            G4cout << ">>> EM physics: G4EmStandardPhysics_option3" << G4endl;
+            break;
+        case 4:
+        default:
+            RegisterPhysics(new G4EmStandardPhysics_option4());
+            G4cout << ">>> EM physics: G4EmStandardPhysics_option4 (EMZ, WentzelVI)" << G4endl;
+            break;
+    }
 
     RegisterPhysics(new G4EmExtraPhysics());
     RegisterPhysics(new G4DecayPhysics());

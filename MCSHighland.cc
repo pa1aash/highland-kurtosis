@@ -21,6 +21,10 @@ int main(int argc, char** argv)
     if (argc >= 3) {
         seed = std::atol(argv[2]);
     }
+    G4int emOption = 4;  // default: option4 (EMZ/WentzelVI)
+    if (argc >= 4) {
+        emOption = std::atoi(argv[3]);
+    }
     G4Random::setTheEngine(new CLHEP::RanecuEngine);
     G4Random::setTheSeed(seed);
 
@@ -28,7 +32,7 @@ int main(int argc, char** argv)
         G4RunManagerType::Default);
 
     runManager->SetUserInitialization(new DetectorConstruction());
-    runManager->SetUserInitialization(new PhysicsList());
+    runManager->SetUserInitialization(new PhysicsList(emOption));
     runManager->SetUserInitialization(new ActionInitialization());
 
     G4VisManager* visManager = new G4VisExecutive("Quiet");
