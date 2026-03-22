@@ -298,22 +298,31 @@ All generated macros use 1M events, wallThickness=0.4mm, sampleWidth=20mm, sampl
   - `core_gaussian_width(data, central_fraction=0.98)` — std of central 98% of data
   - `tail_fraction(data, n_sigma=3)` — fraction of data beyond 3σ
   - `fit_two_gaussian(data, n_bins=200)` — two-Gaussian mixture fit via `scipy.optimize.curve_fit`
+  - `apply_cuts(data, beam_energy_gev, ...)` — applies energy, fiducial, and angle cuts; prints per-cut removal counts
   - `analyze_config(data, ...)` — main per-file analysis
   - `position_resolved_analysis(data, bin_size_mm=1.0)` — 2D map of σ and κ vs entry position
-- **Quality cuts in analyze_config:** **NONE applied** — no energy cut, no angle cut, no fiducial cut. All events with `fHasExit==true` are analyzed.
+- **Quality cuts:** Configurable via command-line arguments (applied before `analyze_config`):
+  - `--energy-cut-fraction` (default 0.9): keep events with `energy_out > fraction * beam_energy`
+  - `--angle-cut-sigma` (default 10): keep events with `|theta_x| < N * sigma_Highland_solid`
+  - `--fiducial-x` (default 5.0 mm): keep events with `|entry_x| < value`
+  - `--fiducial-y` (default 10.0 mm): keep events with `|entry_y| < value`
+  - `--beam-energy` (required when cuts applied): beam energy in GeV for Highland sigma calculation
+  - `--no-cuts`: skip all cuts (backward compatible with previous behavior)
+  - Highland sigma for angle cut uses solid PLA: `highland_sigma_rad(10.0/315.0, beam_energy)`
 - **Constants:** `PLA_X0_MM = 315.0`, `PLA_X0_CM = 31.5`
 - **Kurtosis error:** `sqrt(24/N)` (Gaussian approximation)
 
 ### proposal_analysis.py (analysis/)
 - **Purpose:** Stricter analysis for proposal — applies energy, angle, and fiducial cuts.
-- **Input:** ROOT files from `data/proposal/`
-- **Output:** `results/proposal/proposal_summary.json`
-- **Quality cuts:**
-  - Energy cut: `energy_out > 0.9 * p_GeV`
-  - Angle cut: `|theta_x| < 10 * sigma_Highland` (10σ clip)
-  - Fiducial cut: `|entry_x| < 5 mm`, `|entry_y| < 10 mm`
+- **Input:** ROOT files from `--data-dir` (default `data/proposal/`)
+- **Output:** `--output-dir` (default `results/proposal/`) containing `proposal_summary.json`
+- **Quality cuts (configurable via CLI):**
+  - `--energy-cut-fraction` (default 0.9): `energy_out > fraction * p_GeV`
+  - `--angle-cut-sigma` (default 10): `|theta_x| < N * sigma_Highland` (Nσ clip)
+  - `--fiducial-x` (default 5.0 mm): `|entry_x| < value`
+  - `--fiducial-y` (default 10.0 mm): `|entry_y| < value`
 - **Kurtosis:** `scipy.stats.kurtosis(fisher=True, bias=False)` with 1000-resample bootstrap (seed=42)
-- **Constants:** `PLA_X0_MM = 315.0`, `SAMPLE_T_MM = 10.0`, `N_CUT_SIGMA = 10`, `FIDUCIAL_X_MM = 5.0`, `FIDUCIAL_Y_MM = 10.0`
+- **Constants (now defaults):** `PLA_X0_MM = 315.0`, `SAMPLE_T_MM = 10.0`, `n_cut_sigma_DEFAULT = 10`, `FIDUCIAL_X_MM_DEFAULT = 5.0`, `FIDUCIAL_Y_MM_DEFAULT = 10.0`, `ENERGY_CUT_FRACTION_DEFAULT = 0.9`
 
 ### universal_equation_final.py (analysis/)
 - **Purpose:** Validates universal kurtosis equation `κ = (3+κ_M)/f - 3` against Geant4 data.
@@ -494,17 +503,10 @@ Path-length distributions for 1M rays each:
 - **Ray-trace version exists:** `scripts/ray_trace_sweep0.py` already has `raytrace_stacked_rectilinear()` and `raytrace_gyroid_stacked()` with independent phases — this just needs a Geant4 equivalent.
 - **Estimated scope:** ~80 lines in DetectorConstruction (new method + parameter)
 
-### Gap 6: Re-run analysis with different cut thresholds without modifying source code
-- **Status: PARTIALLY SUPPORTED**
-- **File:** `analysis/analyze_mcs.py` — has **no cuts at all** (all events analyzed)
-- **File:** `analysis/proposal_analysis.py` — has hardcoded cuts: `N_CUT_SIGMA=10`, `FIDUCIAL_X_MM=5.0`, `FIDUCIAL_Y_MM=10.0`, energy cut `0.9*p`
-- **Change needed:** Add command-line arguments to both scripts for cut thresholds:
-  - `--energy-cut-fraction` (default 0.9)
-  - `--angle-cut-sigma` (default 10)
-  - `--fiducial-x` (default 5 mm)
-  - `--fiducial-y` (default 10 mm)
-  - `--no-cuts` flag for analyze_mcs.py compatibility
-- **Estimated scope:** ~30 lines per script (argparse additions + parameter threading)
+### ~~Gap 6: Re-run analysis with different cut thresholds without modifying source code~~
+- **Status: RESOLVED**
+- **File:** `analysis/analyze_mcs.py` — now supports configurable cuts via `--energy-cut-fraction`, `--angle-cut-sigma`, `--fiducial-x`, `--fiducial-y`, `--beam-energy`, and `--no-cuts` (backward compatible). Prints per-cut event removal summary.
+- **File:** `analysis/proposal_analysis.py` — hardcoded constants replaced with CLI arguments `--energy-cut-fraction` (default 0.9), `--angle-cut-sigma` (default 10), `--fiducial-x` (default 5.0), `--fiducial-y` (default 10.0). Also accepts `--data-dir` and `--output-dir`. Prints cut configuration and per-file cut summary.
 
 ### Additional issues noted
 1. **Class name typo:** `DetectorConstruction` is missing the 'o' in "Construction" — affects all 4 files (header, source, messenger header, messenger source, main). Cosmetic but worth noting.

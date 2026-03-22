@@ -418,6 +418,44 @@ def plot_position_map(x_bins, y_bins, sigma_map, kappa_map, config_name, output_
     fig.savefig(str(output_path), dpi=150)
     plt.close(fig)
 
+def apply_cuts(data, beam_energy_gev, energy_cut_fraction=0.9,
+               angle_cut_sigma=10.0, fiducial_x=5.0, fiducial_y=10.0):
+    n_before = len(data["theta_x"])
+    mask = np.ones(n_before, dtype=bool)
+
+    # Energy cut
+    energy_mask = data["energy_out"] > energy_cut_fraction * beam_energy_gev
+    n_energy = np.sum(~energy_mask & mask)
+    mask &= energy_mask
+
+    # Fiducial cuts
+    fid_mask = (np.abs(data["entry_x"]) < fiducial_x) & (np.abs(data["entry_y"]) < fiducial_y)
+    n_fiducial = np.sum(~fid_mask & mask)
+    mask &= fid_mask
+
+    # Angle cut using Highland sigma for solid PLA
+    sigma_highland = highland_sigma_rad(10.0 / PLA_X0_MM, beam_energy_gev)
+    angle_max = angle_cut_sigma * sigma_highland
+    angle_mask = (np.abs(data["theta_x"]) < angle_max) & (np.abs(data["theta_y"]) < angle_max)
+    n_angle = np.sum(~angle_mask & mask)
+    mask &= angle_mask
+
+    n_after = np.sum(mask)
+
+    print(f"  Cuts applied (beam_energy={beam_energy_gev:.1f} GeV):")
+    print(f"    Energy cut (E > {energy_cut_fraction}*{beam_energy_gev:.1f} GeV): "
+          f"removed {n_energy}")
+    print(f"    Fiducial (|x|<{fiducial_x}, |y|<{fiducial_y} mm): "
+          f"removed {n_fiducial}")
+    print(f"    Angle ({angle_cut_sigma}*sigma_H = {angle_max*1e3:.2f} mrad): "
+          f"removed {n_angle}")
+    print(f"    Total: {n_before} -> {n_after} events "
+          f"({n_before - n_after} removed, {100*n_after/n_before:.1f}% kept)")
+
+    return {k: v[mask] if isinstance(v, np.ndarray) and len(v) == n_before else v
+            for k, v in data.items()}
+
+
 def parse_config_name(filepath):
     name = Path(filepath).stem
     parts = name.split("_")
@@ -447,7 +485,22 @@ def main():
     parser.add_argument("--output-dir", type=str, default=None)
     parser.add_argument("--sweep0", type=str, default=None,
                         help="Path to sweep0_summary.json")
+    parser.add_argument("--beam-energy", type=float, default=None,
+                        help="Beam energy in GeV (required for cuts; overrides per-file guess)")
+    parser.add_argument("--energy-cut-fraction", type=float, default=0.9,
+                        help="Keep events with energy_out > fraction * beam_energy (default 0.9)")
+    parser.add_argument("--angle-cut-sigma", type=float, default=10.0,
+                        help="Keep events with |theta_x| < N * sigma_Highland_solid (default 10)")
+    parser.add_argument("--fiducial-x", type=float, default=5.0,
+                        help="Fiducial cut on |entry_x| in mm (default 5.0)")
+    parser.add_argument("--fiducial-y", type=float, default=10.0,
+                        help="Fiducial cut on |entry_y| in mm (default 10.0)")
+    parser.add_argument("--no-cuts", action="store_true",
+                        help="Skip all quality cuts (backward compatible)")
     args = parser.parse_args()
+
+    if not args.no_cuts and args.beam_energy is None:
+        parser.error("--beam-energy is required when cuts are applied (use --no-cuts to skip)")
 
     if args.output_dir:
         output_dir = Path(args.output_dir)
@@ -482,6 +535,17 @@ def main():
         except Exception as e:
             print(f"  ERROR loading: {e}")
             continue
+
+        if not args.no_cuts:
+            beam_e = args.beam_energy if args.beam_energy else (
+                config["energy"] if config["energy"] > 0 else 4.0)
+            data = apply_cuts(data, beam_e,
+                              energy_cut_fraction=args.energy_cut_fraction,
+                              angle_cut_sigma=args.angle_cut_sigma,
+                              fiducial_x=args.fiducial_x,
+                              fiducial_y=args.fiducial_y)
+        else:
+            print(f"  No cuts applied (--no-cuts)")
 
         result = analyze_config(
             data,

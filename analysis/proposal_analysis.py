@@ -3,6 +3,7 @@ from scipy import stats, optimize
 from pathlib import Path
 import json
 import sys
+import argparse
 
 try:
     import matplotlib
@@ -20,10 +21,10 @@ except ImportError:
 
 PLA_X0_MM = 315.0
 SAMPLE_T_MM = 10.0
-N_CUT_SIGMA = 10
-
-FIDUCIAL_X_MM = 5.0
-FIDUCIAL_Y_MM = 10.0
+n_cut_sigma_DEFAULT = 10
+FIDUCIAL_X_MM_DEFAULT = 5.0
+FIDUCIAL_Y_MM_DEFAULT = 10.0
+ENERGY_CUT_FRACTION_DEFAULT = 0.9
 
 SIGMA_POS_UM = 2.0
 LEVER_ARM_MM = 20.0
@@ -45,7 +46,11 @@ def highland_sigma(x_over_X0, p_gev):
         return 0.0
     return (13.6e-3 / p_gev) * np.sqrt(x_over_X0) * (1 + 0.038 * np.log(x_over_X0))
 
-def analyze_file(filepath, p_gev=4.0, label="", fiducial=False):
+def analyze_file(filepath, p_gev=4.0, label="", fiducial=False,
+                 energy_cut_fraction=ENERGY_CUT_FRACTION_DEFAULT,
+                 n_cut_sigma=n_cut_sigma_DEFAULT,
+                 fiducial_x=FIDUCIAL_X_MM_DEFAULT,
+                 fiducial_y=FIDUCIAL_Y_MM_DEFAULT):
     f = uproot.open(filepath)
     tree = f["scattering"]
     data = tree.arrays(library="np")
@@ -58,10 +63,10 @@ def analyze_file(filepath, p_gev=4.0, label="", fiducial=False):
     entry_y = data["entry_y"]
     N_raw = len(theta_x)
 
-    energy_cut = energy_out > (p_gev * 0.9)
+    energy_cut = energy_out > (p_gev * energy_cut_fraction)
 
     if fiducial:
-        fid_cut = (np.abs(entry_x) < FIDUCIAL_X_MM) & (np.abs(entry_y) < FIDUCIAL_Y_MM)
+        fid_cut = (np.abs(entry_x) < fiducial_x) & (np.abs(entry_y) < fiducial_y)
         energy_cut = energy_cut & fid_cut
 
     mean_pla_all = np.mean(pla_path[energy_cut])
@@ -69,12 +74,15 @@ def analyze_file(filepath, p_gev=4.0, label="", fiducial=False):
     sigma_highland = highland_sigma(xX0_all, p_gev)
 
     if sigma_highland > 0:
-        angle_max = N_CUT_SIGMA * sigma_highland
+        angle_max = n_cut_sigma * sigma_highland
     else:
         angle_max = 0.02
 
     angle_cut = (np.abs(theta_x) < angle_max) & (np.abs(theta_y) < angle_max)
     mask = energy_cut & angle_cut
+
+    n_after_energy = np.sum(energy_cut)
+    n_after_all = np.sum(mask)
 
     theta_x = theta_x[mask]
     theta_y = theta_y[mask]
@@ -84,6 +92,9 @@ def analyze_file(filepath, p_gev=4.0, label="", fiducial=False):
     f_intermediate = np.mean((pla_path_cut > 0.1) & (pla_path_cut < SAMPLE_T_MM - 0.5))
     N = len(theta_x)
     n_cut = N_raw - N
+
+    print(f"    {label}: {N_raw} -> {n_after_energy} (energy"
+          f"{'+fiducial' if fiducial else ''}) -> {N} (angle) = {n_cut} removed")
 
     if N < 100:
         return None
@@ -167,7 +178,10 @@ def analyze_file(filepath, p_gev=4.0, label="", fiducial=False):
         "theta_y": theta_y,
     }
 
-def load_all_results(data_dir, fiducial=False):
+def load_all_results(data_dir, fiducial=False, energy_cut_fraction=ENERGY_CUT_FRACTION_DEFAULT,
+                     n_cut_sigma=n_cut_sigma_DEFAULT,
+                     fiducial_x=FIDUCIAL_X_MM_DEFAULT,
+                     fiducial_y=FIDUCIAL_Y_MM_DEFAULT):
     results = {}
     tag = "fiducial" if fiducial else "full"
     for f in sorted(data_dir.glob("*.root")):
@@ -179,7 +193,10 @@ def load_all_results(data_dir, fiducial=False):
         else:
             energy = 4.0
 
-        r = analyze_file(f, p_gev=energy, label=label, fiducial=fiducial)
+        r = analyze_file(f, p_gev=energy, label=label, fiducial=fiducial,
+                         energy_cut_fraction=energy_cut_fraction,
+                         n_cut_sigma=n_cut_sigma,
+                         fiducial_x=fiducial_x, fiducial_y=fiducial_y)
         if r:
             results[label] = r
             print(f"  [{tag}] {label} (N={r['N']}, kappa={r['kappa_avg']:.2f})")
@@ -204,13 +221,13 @@ def get_solid_kappa(results):
                 solid_boot_se[energy] = 0
     return solid_kappa, solid_boot_se
 
-def print_tables(results, tag=""):
+def print_tables(results, tag="", n_cut_sigma=n_cut_sigma_DEFAULT):
     prefix_tag = f" [{tag}]" if tag else ""
 
     solid_kappa, solid_boot_se = get_solid_kappa(results)
 
     print(f"TABLE 1{prefix_tag}: Control Configurations")
-    print(f"  (Angle cut: {N_CUT_SIGMA}x sigma_Highland per config)")
+    print(f"  (Angle cut: {n_cut_sigma}x sigma_Highland per config)")
     print(f"  (SE: formula=sqrt(24/N), boot=bootstrap 1000 resamples)")
     print(f"{'Config':<25} {'N':>7} {'sigma_x (urad)':>14} {'Highland':>10} "
           f"{'s/H':>6} {'kappa_avg':>9} {'+-form':>7} {'+-boot':>7}")
@@ -329,7 +346,7 @@ def print_tables(results, tag=""):
 
         print(f"TABLE 5{prefix_tag}: Formula Verification -- Dk = k_geo * (1 + k_M/3)")
         print(f"  k_geo (ray): 3 Var(s)/<s>^2 from ray-trace path distribution")
-        print(f"  k_M = kappa_solid = {kappa_base_4:.2f} (4 GeV, {N_CUT_SIGMA}sigma cut)")
+        print(f"  k_M = kappa_solid = {kappa_base_4:.2f} (4 GeV, {n_cut_sigma}sigma cut)")
         print(f"  Moliere 4th moment diverges => k_M depends on cut => cross-term suppressed")
         print(f"  => Dk ≈ k_geo (not k_geo*(1+k_M/3)) for normalized-cut measurement")
         geom_display = {"rectilinear": "Rectilinear", "honeycomb": "Honeycomb",
@@ -501,7 +518,7 @@ def print_tables(results, tag=""):
     for name, dk, k in ranking:
         print(f"   {name:<14}: kappa = {k:.2f}, Dk = {dk:+.2f}")
 
-    print(f"\n5. Energy Scaling (energy-matched baselines, {N_CUT_SIGMA}sigma cut):")
+    print(f"\n5. Energy Scaling (energy-matched baselines, {n_cut_sigma}sigma cut):")
     for prefix, name in [("rect", "Rectilinear"), ("gyr", "Gyroid")]:
         deltas_e = []
         for energy in ENERGY_SCAN:
@@ -591,33 +608,60 @@ VORONOI:
     return infill_data, solid_kappa, energy_dk
 
 def main():
-    data_dir = Path("data/proposal")
-    results_dir = Path("results/proposal")
+    parser = argparse.ArgumentParser(description="Proposal Analysis Pipeline")
+    parser.add_argument("--data-dir", type=str, default="data/proposal",
+                        help="Directory with ROOT files (default: data/proposal)")
+    parser.add_argument("--output-dir", type=str, default="results/proposal",
+                        help="Output directory (default: results/proposal)")
+    parser.add_argument("--energy-cut-fraction", type=float, default=ENERGY_CUT_FRACTION_DEFAULT,
+                        help=f"Keep events with energy_out > fraction * beam_energy (default {ENERGY_CUT_FRACTION_DEFAULT})")
+    parser.add_argument("--angle-cut-sigma", type=float, default=n_cut_sigma_DEFAULT,
+                        help=f"Angle cut in multiples of sigma_Highland (default {n_cut_sigma_DEFAULT})")
+    parser.add_argument("--fiducial-x", type=float, default=FIDUCIAL_X_MM_DEFAULT,
+                        help=f"Fiducial cut on |entry_x| in mm (default {FIDUCIAL_X_MM_DEFAULT})")
+    parser.add_argument("--fiducial-y", type=float, default=FIDUCIAL_Y_MM_DEFAULT,
+                        help=f"Fiducial cut on |entry_y| in mm (default {FIDUCIAL_Y_MM_DEFAULT})")
+    args = parser.parse_args()
+
+    data_dir = Path(args.data_dir)
+    results_dir = Path(args.output_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
+
+    cut_kwargs = dict(
+        energy_cut_fraction=args.energy_cut_fraction,
+        n_cut_sigma=args.angle_cut_sigma,
+        fiducial_x=args.fiducial_x,
+        fiducial_y=args.fiducial_y,
+    )
+
+    print("Cut configuration:")
+    print(f"  Energy cut: energy_out > {args.energy_cut_fraction} * beam_energy")
+    print(f"  Angle cut: |theta| < {args.angle_cut_sigma} * sigma_Highland_solid")
+    print(f"  Fiducial: |entry_x| < {args.fiducial_x} mm, |entry_y| < {args.fiducial_y} mm")
 
     if not HAS_UPROOT:
         print("ERROR: uproot not installed. pip install uproot")
         sys.exit(1)
 
-    print("ANALYSIS PASS 1 (PRIMARY): Telescope fiducial cut "
-          f"(|x|<{FIDUCIAL_X_MM}mm, |y|<{FIDUCIAL_Y_MM}mm)")
-    results_fid = load_all_results(data_dir, fiducial=True)
+    print(f"\nANALYSIS PASS 1 (PRIMARY): Telescope fiducial cut "
+          f"(|x|<{args.fiducial_x}mm, |y|<{args.fiducial_y}mm)")
+    results_fid = load_all_results(data_dir, fiducial=True, **cut_kwargs)
 
     if not results_fid:
         print("No results found!")
         sys.exit(1)
 
     infill_data, solid_kappa_fid, energy_dk_fid = print_tables(
-        results_fid, tag="Fiducial (primary)")
+        results_fid, tag="Fiducial (primary)", n_cut_sigma=args.angle_cut_sigma)
 
     print("\nANALYSIS PASS 2 (SECONDARY): Full acceptance (no fiducial cut)")
-    results_full = load_all_results(data_dir, fiducial=False)
+    results_full = load_all_results(data_dir, fiducial=False, **cut_kwargs)
 
     infill_data_full = None
     solid_kappa_full = {}
     if results_full:
         infill_data_full, solid_kappa_full, _ = print_tables(
-            results_full, tag="Full acceptance")
+            results_full, tag="Full acceptance", n_cut_sigma=args.angle_cut_sigma)
 
     if results_full and results_fid:
         solid_fid = results_fid.get("control_solid_4GeV")
@@ -627,7 +671,7 @@ def main():
         baseline_boot_fid = solid_fid['kappa_err_boot'] if solid_fid else 0
 
         print("TABLE 9: Fiducial vs Full Acceptance Comparison")
-        print(f"  Fiducial: |x|<{FIDUCIAL_X_MM}mm, |y|<{FIDUCIAL_Y_MM}mm "
+        print(f"  Fiducial: |x|<{args.fiducial_x}mm, |y|<{args.fiducial_y}mm "
               f"(MIMOSA26 active area)")
         print(f"  Threshold: |Dk_diff| > 1 bootstrap SE ({baseline_boot_fid:.2f})")
         print(f"{'Config':<25} {'N_fid':>7} {'N_full':>7} "
@@ -754,7 +798,7 @@ def main():
         ax.legend(loc='best', fontsize=10)
         ax.grid(True, alpha=0.3)
 
-        fig.suptitle(f'MCS Highland Validation -- Proposal Results (fiducial, {N_CUT_SIGMA}sigma_H cut)',
+        fig.suptitle(f'MCS Highland Validation -- Proposal Results (fiducial, {args.angle_cut_sigma}sigma_H cut)',
                      fontsize=15, fontweight='bold', y=0.98)
         fig.tight_layout(rect=[0, 0, 1, 0.96])
 
@@ -778,13 +822,19 @@ def main():
             "kappa_full": solid_kappa_full.get(energy),
         }
 
+    summary["cut_parameters"] = {
+        "energy_cut_fraction": args.energy_cut_fraction,
+        "angle_cut_sigma": args.angle_cut_sigma,
+        "fiducial_x_mm": args.fiducial_x,
+        "fiducial_y_mm": args.fiducial_y,
+    }
     summary["telescope_info"] = {
         "sigma_telescope_mrad": SIGMA_TELESCOPE_MRAD,
         "sigma_pos_um": SIGMA_POS_UM,
         "lever_arm_mm": LEVER_ARM_MM,
         "n_planes_upstream": N_PLANES_UP,
-        "fiducial_x_mm": FIDUCIAL_X_MM,
-        "fiducial_y_mm": FIDUCIAL_Y_MM,
+        "fiducial_x_mm": args.fiducial_x,
+        "fiducial_y_mm": args.fiducial_y,
     }
 
     json_path = results_dir / "proposal_summary.json"
