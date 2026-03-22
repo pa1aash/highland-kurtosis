@@ -74,6 +74,7 @@ File: `{fileName}.root`, tree name: `scattering`
 /MCS/det/sampleThickness 10 mm
 /MCS/det/cellSize 4.0 mm
 /MCS/det/wallThickness 0.4 mm
+/MCS/det/nLayers 1              # stacked rectilinear layers (1-100)
 /MCS/output/fileName MCSOutput
 /MCS/gun/pencilBeam false
 /MCS/gun/beamSigma 5 mm

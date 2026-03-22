@@ -39,6 +39,7 @@ public:
     void SetSampleWidth(G4double width);
     void SetSTLFile(const G4String& filename);
     void SetMaterial(const G4String& name);
+    void SetNLayers(G4int n);
 
     GeometryType GetGeometryType() const { return fGeometryType; }
     G4String GetMaterialName() const { return fMaterialName; }
@@ -51,6 +52,7 @@ private:
     G4VPhysicalVolume* ConstructWorld();
     void ConstructSolidPLA();
     void ConstructRectilinearLattice();
+    void ConstructStackedRectilinearLattice();
     void ConstructHoneycombLattice();
     void ConstructGyroidLattice();
     void ConstructCubicLattice();
@@ -74,6 +76,7 @@ private:
     G4double fSampleThickness;
     G4double fSampleWidth;
     G4String fSTLFile;
+    G4int fNLayers;
 
     G4LogicalVolume* fLogicWorld;
     G4LogicalVolume* fLogicTarget;

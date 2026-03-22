@@ -31,7 +31,7 @@ DetectorConstruction::DetectorConstruction()
       fGeometryType(GeometryType::kSolidPLA), fInfillPercent(100.0),
       fCellSize(4.0 * mm), fWallThickness(0.4 * mm),
       fSampleThickness(10.0 * mm), fSampleWidth(20.0 * mm), fSTLFile(""),
-      fLogicWorld(nullptr), fLogicTarget(nullptr), fLogicPLABlock(nullptr),
+      fNLayers(1), fLogicWorld(nullptr), fLogicTarget(nullptr), fLogicPLABlock(nullptr),
       fConstructed(false) {
   fMessenger = new DetectorMessenger(this);
   DefineMaterials();
@@ -142,6 +142,12 @@ void DetectorConstruction::SetMaterial(const G4String &name) {
     G4RunManager::GetRunManager()->ReinitializeGeometry();
 }
 
+void DetectorConstruction::SetNLayers(G4int n) {
+  fNLayers = std::clamp(n, 1, 100);
+  if (fConstructed)
+    G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
 G4VPhysicalVolume *DetectorConstruction::Construct() {
   G4VPhysicalVolume *physWorld = ConstructWorld();
 
@@ -153,7 +159,10 @@ G4VPhysicalVolume *DetectorConstruction::Construct() {
     G4cout << ">>> Air-only (no target)" << G4endl;
     break;
   case GeometryType::kRectilinear:
-    ConstructRectilinearLattice();
+    if (fNLayers > 1)
+      ConstructStackedRectilinearLattice();
+    else
+      ConstructRectilinearLattice();
     break;
   case GeometryType::kHoneycomb:
     ConstructHoneycombLattice();
@@ -271,6 +280,77 @@ void DetectorConstruction::ConstructRectilinearLattice() {
   G4cout << ">>> Rectilinear: " << nCells << "x" << nCells << " cells, "
          << "cell=" << fCellSize / mm << " mm, wall=" << fWallThickness / mm
          << " mm, target infill=" << fInfillPercent << "%" << G4endl;
+}
+
+void DetectorConstruction::ConstructStackedRectilinearLattice() {
+  G4double halfW = fSampleWidth / 2.0;
+  G4double halfT = fSampleThickness / 2.0;
+
+  G4Box *solidTarget = new G4Box("Target", halfW, halfW, halfT);
+  fLogicTarget = new G4LogicalVolume(solidTarget, fAir, "Target");
+  fLogicTarget->SetVisAttributes(G4VisAttributes::GetInvisible());
+  new G4PVPlacement(nullptr, G4ThreeVector(), fLogicTarget, "Target",
+                    fLogicWorld, false, 0, true);
+  MakeTargetRegion(fLogicTarget);
+
+  if (fInfillPercent >= 100.0) {
+    G4Box *sf = new G4Box("PLAFill", halfW, halfW, halfT);
+    G4LogicalVolume *lf = new G4LogicalVolume(sf, fTargetMaterial, "PLAFill");
+    lf->SetUserLimits(new G4UserLimits(0.1 * mm));
+    new G4PVPlacement(nullptr, G4ThreeVector(), lf, "PLAFill", fLogicTarget,
+                      false, 0, true);
+    return;
+  }
+
+  G4double airGap = 0.05 * mm;
+  G4double totalGaps = airGap * (fNLayers - 1);
+  G4double layerThickness = (fSampleThickness - totalGaps) / fNLayers;
+  G4double halfLayerT = layerThickness / 2.0;
+  G4double halfWallT = fWallThickness / 2.0;
+  G4int nCells = std::max(1, static_cast<G4int>(fSampleWidth / fCellSize));
+  G4int copyNo = 0;
+
+  for (G4int layer = 0; layer < fNLayers; layer++) {
+    // z-center of this layer
+    G4double zCenter = -halfT + layer * (layerThickness + airGap) + halfLayerT;
+
+    // Random transverse phase offset (uniform within one cell period)
+    G4double xOffset = CLHEP::RandFlat::shoot(0.0, fCellSize);
+    G4double yOffset = CLHEP::RandFlat::shoot(0.0, fCellSize);
+
+    // X-walls for this layer
+    for (G4int i = 0; i <= nCells; i++) {
+      G4double xPos = -halfW + i * fCellSize + xOffset;
+      // Wrap into sample bounds
+      while (xPos > halfW)
+        xPos -= fCellSize;
+      while (xPos < -halfW)
+        xPos += fCellSize;
+      xPos = std::clamp(xPos, -halfW + halfWallT, halfW - halfWallT);
+      PlaceWallSlab(halfWallT, halfW, halfLayerT,
+                    G4ThreeVector(xPos, 0, zCenter), nullptr, "XWall",
+                    copyNo++);
+    }
+
+    // Y-walls for this layer
+    for (G4int j = 0; j <= nCells; j++) {
+      G4double yPos = -halfW + j * fCellSize + yOffset;
+      while (yPos > halfW)
+        yPos -= fCellSize;
+      while (yPos < -halfW)
+        yPos += fCellSize;
+      yPos = std::clamp(yPos, -halfW + halfWallT, halfW - halfWallT);
+      PlaceWallSlab(halfW, halfWallT, halfLayerT,
+                    G4ThreeVector(0, yPos, zCenter), nullptr, "YWall",
+                    copyNo++);
+    }
+  }
+
+  G4cout << ">>> Stacked Rectilinear: " << fNLayers << " layers, "
+         << nCells << "x" << nCells << " cells/layer, "
+         << "cell=" << fCellSize / mm << " mm, wall=" << fWallThickness / mm
+         << " mm, layerT=" << layerThickness / mm << " mm, gap=" << airGap / mm
+         << " mm" << G4endl;
 }
 
 void DetectorConstruction::ConstructHoneycombLattice() {

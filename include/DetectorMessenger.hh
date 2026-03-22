@@ -6,6 +6,7 @@
 #include "G4UIcmdWithAString.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4UIcmdWithADouble.hh"
+#include "G4UIcmdWithAnInteger.hh"
 
 class DetectorConstruction;
 
@@ -29,6 +30,7 @@ private:
     G4UIcmdWithADoubleAndUnit* fSampleWidthCmd;
     G4UIcmdWithAString*        fSTLFileCmd;
     G4UIcmdWithAString*        fMaterialCmd;
+    G4UIcmdWithAnInteger*      fNLayersCmd;
 };
 
 #endif

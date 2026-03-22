@@ -265,6 +265,20 @@ Generates **148 macro files** to `macros/generated/`:
 
 All generated macros use 1M events, wallThickness=0.4mm, sampleWidth=20mm, sampleThickness=10mm (except sweep 6).
 
+### generate_thin_wall_macros.py (scripts/)
+
+Generates **27 macro files** to `macros/generated/phase01_thin_wall/` for Phase 0.1 thin-wall kappa_M parametrisation:
+
+| Parameter | Values |
+|-----------|--------|
+| Geometry | solid PLA slab |
+| Thicknesses | 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 2.0, 5.0, 10.0 mm |
+| Energies | 2, 4, 6 GeV |
+| Events | 100,000 per macro |
+| Output naming | `thin_wall_solid_{thickness}mm_{energy}GeV` |
+
+Runner script: `scripts/run_thin_wall.sh` — runs all 27 macros sequentially, outputs to `data/phase01_thin_wall/`.
+
 ### Complete macro command interface
 
 | Command | Type | Default | Range/Candidates |
@@ -490,12 +504,10 @@ Path-length distributions for 1M rays each:
 - **Files:** `MCSHighland.cc`, `src/PhysicsList.cc`, `include/PhysicsList.hh`
 - **Details:** Added optional third command-line argument `emOption` (0, 3, or 4; default 4). `MCSHighland.cc` parses `argv[3]` and passes it to the `PhysicsList(G4int emOption)` constructor. The constructor switches on the value to register `G4EmStandardPhysics` (option0, Urban MCS), `G4EmStandardPhysics_option3`, or `G4EmStandardPhysics_option4` (EMZ/WentzelVI). Selected option is printed at startup.
 
-### Gap 5: Build stacked independent layers (N rectilinear layers with random phase offsets)
-- **Status: NOT SUPPORTED in Geant4** (only in ray-trace code)
-- **File:** `src/DetectorConstruction.cc`
-- **Change needed:** Add a `fNLayers` parameter and `/MCS/det/nLayers` command. In `ConstructRectilinearLattice()`, divide `fSampleThickness` into N equal z-slices, each with independently randomized wall positions (random x/y phase offset per layer). Similarly for other geometries.
-- **Ray-trace version exists:** `scripts/ray_trace_sweep0.py` already has `raytrace_stacked_rectilinear()` and `raytrace_gyroid_stacked()` with independent phases — this just needs a Geant4 equivalent.
-- **Estimated scope:** ~80 lines in DetectorConstruction (new method + parameter)
+### ~~Gap 5: Build stacked independent layers (N rectilinear layers with random phase offsets)~~
+- **Status: IMPLEMENTED (Session 5)**
+- **Files:** `src/DetectorConstruction.cc`, `include/DetectorConstruction.hh`, `src/DetectorMessenger.cc`, `include/DetectorMessenger.hh`
+- **Details:** Added `fNLayers` member (default 1), `SetNLayers()` setter, and `ConstructStackedRectilinearLattice()` method. When `fNLayers > 1` and geometry is rectilinear, the sample thickness is divided into N equal z-slices with 0.05 mm air gaps between them. Each layer gets a random transverse phase offset (uniform within one cell period) via `CLHEP::RandFlat`. Wall volumes use the same "XWall"/"YWall" names so SteppingAction detection works unchanged. New macro command: `/MCS/det/nLayers` (integer, range 1–100).
 
 ### ~~Gap 6: Re-run analysis with different cut thresholds without modifying source code~~
 - **Status: RESOLVED**

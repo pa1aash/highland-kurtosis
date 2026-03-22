@@ -58,6 +58,13 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det)
     fMaterialCmd->SetParameterName("material", false);
     fMaterialCmd->SetCandidates("PLA silicon tungsten");
     fMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+    fNLayersCmd = new G4UIcmdWithAnInteger("/MCS/det/nLayers", this);
+    fNLayersCmd->SetGuidance("Number of independent rectilinear layers stacked along z (1-100).");
+    fNLayersCmd->SetParameterName("nLayers", false);
+    fNLayersCmd->SetDefaultValue(1);
+    fNLayersCmd->SetRange("nLayers>=1 && nLayers<=100");
+    fNLayersCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger()
@@ -70,6 +77,7 @@ DetectorMessenger::~DetectorMessenger()
     delete fSampleWidthCmd;
     delete fSTLFileCmd;
     delete fMaterialCmd;
+    delete fNLayersCmd;
     delete fDetDir;
 }
 
@@ -98,5 +106,8 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
     }
     else if (command == fMaterialCmd) {
         fDetector->SetMaterial(newValue);
+    }
+    else if (command == fNLayersCmd) {
+        fDetector->SetNLayers(fNLayersCmd->GetNewIntValue(newValue));
     }
 }
