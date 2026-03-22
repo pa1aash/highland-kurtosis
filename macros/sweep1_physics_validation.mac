@@ -1,0 +1,18 @@
+/control/execute macros/init.mac
+
+/MCS/det/geometry gyroid
+/MCS/det/infill 40
+/MCS/det/cellSize 4.0 mm
+/MCS/det/wallThickness 0.4 mm
+/MCS/det/sampleThickness 10 mm
+/MCS/det/sampleWidth 20 mm
+
+/MCS/phys/rangeFactor 0.04
+
+/run/initialize
+
+/gun/energy 4 GeV
+
+/MCS/output/fileName sweep1_gyroid40_4GeV_rf004
+
+/run/beamOn 1000000

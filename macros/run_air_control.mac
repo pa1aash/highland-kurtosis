@@ -1,0 +1,17 @@
+/control/execute macros/init.mac
+
+/MCS/det/geometry air
+
+/run/initialize
+
+/gun/energy 2 GeV
+/MCS/output/fileName control_air_2GeV
+/run/beamOn 1000000
+
+/gun/energy 4 GeV
+/MCS/output/fileName control_air_4GeV
+/run/beamOn 1000000
+
+/gun/energy 6 GeV
+/MCS/output/fileName control_air_6GeV
+/run/beamOn 1000000

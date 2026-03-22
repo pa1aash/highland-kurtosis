@@ -1,0 +1,19 @@
+/MCS/det/geometry rectilinear
+/MCS/det/infill 40
+/MCS/det/cellSize 2.0 mm
+/MCS/det/wallThickness 0.4 mm
+/MCS/det/sampleThickness 10 mm
+/MCS/det/sampleWidth 20 mm
+
+/run/initialize
+
+/vis/open OGL 800x600-0+0
+/vis/viewer/set/viewpointThetaPhi 30 30
+/vis/viewer/set/autoRefresh true
+/vis/drawVolume
+/vis/scene/add/axes 0 0 0 10 mm
+/vis/scene/add/trajectories smooth
+/vis/scene/endOfEventAction accumulate 10
+
+/gun/energy 4 GeV
+/run/beamOn 10

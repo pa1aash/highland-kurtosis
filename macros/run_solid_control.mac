@@ -1,0 +1,19 @@
+/control/execute macros/init.mac
+
+/MCS/det/geometry solid
+/MCS/det/sampleThickness 10 mm
+/MCS/det/sampleWidth 20 mm
+
+/run/initialize
+
+/gun/energy 2 GeV
+/MCS/output/fileName control_solid_2GeV
+/run/beamOn 1000000
+
+/gun/energy 4 GeV
+/MCS/output/fileName control_solid_4GeV
+/run/beamOn 1000000
+
+/gun/energy 6 GeV
+/MCS/output/fileName control_solid_6GeV
+/run/beamOn 1000000

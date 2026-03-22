@@ -1,0 +1,220 @@
+# Paper Audit: main.tex
+
+**Audited:** 2026-03-22
+**Paper:** "Non-Gaussian multiple Coulomb scattering in heterogeneous media predicted by a universal kurtosis equation"
+**Target journal:** Nuclear Instruments and Methods in Physics Research Section A (NIM-A)
+**Authors:** Palaash Gang, Raunav Mendiratta
+
+---
+
+## 1. Figures Referenced in the Paper
+
+| Fig # | Label | `\includegraphics` path | Caption summary | Line |
+|-------|-------|------------------------|-----------------|------|
+| 1 | `fig:geometries` | `figure_1_geometry_cross_sections.png` | XY cross-sections of 5 lattice geometries at representative infill levels | 329 |
+| 2 | `fig:angular` | `figure_2_angular_distributions.png` | Projected scattering angle distributions at 4 GeV, rectilinear 20-80% + solid | 381 |
+| 3 | `fig:binary_vs_continuous` | `figure_3_kurtosis_vs_infill.png` | Excess kurtosis vs infill for all 5 geometries with 3(1-f)/f theory curve | 400 |
+| 4 | `fig:money` | `figure_4_measured_vs_predicted.png` | Measured vs predicted kurtosis for all 27 configs (central validation plot) | 412 |
+| 5 | `fig:thinwall` | `figure_5_thin_wall_enhancement.png` | Thin-wall Moliere enhancement ratio vs beam energy for binary lattices | 428 |
+| 6 | `fig:Nscaling` | `figure_6_n_scaling.png` | 1/N convergence of kurtosis: log-log and universality collapse (figure*) | 445 |
+| 7 | `fig:threemodels` | `figure_7_three_model_comparison.png` | Three-model comparison: Geant4 vs mixture vs Highland for rect 40% 4 GeV | 459 |
+
+All figures use relative paths (no directory prefix), so LaTeX resolves them relative to the compilation directory (assumed to be `paper/`).
+
+---
+
+## 2. Actual Figure Files in the Repo
+
+### In `paper/` (same directory as main.tex)
+| File | Size |
+|------|------|
+| `paper/figure_1_geometry_cross_sections.png` | exists |
+| `paper/figure_2_angular_distributions.png` | exists |
+| `paper/figure_3_kurtosis_vs_infill.png` | exists |
+| `paper/figure_4_measured_vs_predicted.png` | exists |
+| `paper/figure_5_thin_wall_enhancement.png` | exists |
+| `paper/figure_6_n_scaling.png` | exists |
+| `paper/figure_7_three_model_comparison.png` | exists |
+
+### In project root (duplicates)
+| File |
+|------|
+| `figure_1_geometry_cross_sections.png` |
+| `figure_2_angular_distributions.png` |
+| `figure_3_kurtosis_vs_infill.png` |
+| `figure_4_measured_vs_predicted.png` |
+| `figure_5_thin_wall_enhancement.png` |
+| `figure_6_n_scaling.png` |
+| `figure_7_three_model_comparison.png` |
+
+### In `proposal_figures/` (different naming, different content)
+| File | Notes |
+|------|-------|
+| `proposal_figures/figure_4.png` / `.pdf` | N-scaling law (NOT the same as paper Figure 4) |
+| `proposal_figures/figure_5.png` / `.pdf` | Angular distributions (NOT the same as paper Figure 5) |
+| `proposal_figures/figure_6.png` / `.pdf` | Kurtosis vs infill (NOT the same as paper Figure 6) |
+| `proposal_figures/theory_same_mass_comparison.png` / `.pdf` | Theory model comparison |
+
+### In `proposal_targets/`
+| File | Notes |
+|------|-------|
+| `proposal_targets/target_cross_sections.png` | Target geometry visualization |
+| `proposal_targets/target_3d_visualization.png` | 3D rendering of targets |
+| `proposal_targets/target_zoomed_sections.png` | Zoomed cross-sections |
+
+---
+
+## 3. Mismatch Table
+
+### Figures referenced in paper vs. files that exist
+
+| Status | Details |
+|--------|---------|
+| **ALL MATCH** | All 7 `\includegraphics` paths resolve correctly to files in `paper/` |
+
+No missing figures. No broken paths.
+
+### Figures that exist but are NOT referenced in the paper
+
+| File | Location | Description |
+|------|----------|-------------|
+| `figure_1_geometry_cross_sections.png` | root | Duplicate of paper/figure_1... |
+| `figure_2_angular_distributions.png` | root | Duplicate of paper/figure_2... |
+| `figure_3_kurtosis_vs_infill.png` | root | Duplicate of paper/figure_3... |
+| `figure_4_measured_vs_predicted.png` | root | Duplicate of paper/figure_4... |
+| `figure_5_thin_wall_enhancement.png` | root | Duplicate of paper/figure_5... |
+| `figure_6_n_scaling.png` | root | Duplicate of paper/figure_6... |
+| `figure_7_three_model_comparison.png` | root | Duplicate of paper/figure_7... |
+| `figure_4.png/.pdf` | `proposal_figures/` | Proposal fig: N-scaling (different from paper Fig 4) |
+| `figure_5.png/.pdf` | `proposal_figures/` | Proposal fig: angular dist (different from paper Fig 5) |
+| `figure_6.png/.pdf` | `proposal_figures/` | Proposal fig: kurtosis vs infill (different from paper Fig 6) |
+| `theory_same_mass_comparison.png/.pdf` | `proposal_figures/` | Theory comparison plot |
+| `target_cross_sections.png` | `proposal_targets/` | Target visualization |
+| `target_3d_visualization.png` | `proposal_targets/` | 3D target rendering |
+| `target_zoomed_sections.png` | `proposal_targets/` | Zoomed target sections |
+
+### Naming confusion between proposal and paper figures
+
+| Proposal file | Paper figure with similar content | Issue |
+|--------------|----------------------------------|-------|
+| `proposal_figures/figure_4.png` (N-scaling) | Paper Figure 6 (`figure_6_n_scaling.png`) | Same topic, different numbering |
+| `proposal_figures/figure_5.png` (angular dist.) | Paper Figure 2 (`figure_2_angular_distributions.png`) | Same topic, different numbering |
+| `proposal_figures/figure_6.png` (kurtosis vs infill) | Paper Figure 3 (`figure_3_kurtosis_vs_infill.png`) | Same topic, different numbering |
+
+The proposal figures were generated from Geant4 ROOT data via `generate_proposal_figures.py`. The paper figures (figure_1 through figure_7) were generated by `make_all_figures.py` and `make_figure1.py` using **synthetic data** (not actual simulation ROOT files). These are independent figure sets with different data sources.
+
+---
+
+## 4. Tables in the Paper
+
+### Table 1: Complete simulation results (label: `tab:results`)
+- **Line:** 466-512
+- **Content:** 27 rows covering all analysable configurations
+- **Columns:** Geometry, Infill (%), Energy (GeV), N_pass, sigma_x (mrad), sigma_H (mrad), sigma_x/sigma_H, kappa +/- SE, Delta_kappa
+- **Sections:**
+  - Solid PLA controls (3 rows: 2/4/6 GeV)
+  - Lattice geometries at 4 GeV (20 rows: 5 geom x 4 infills)
+  - Energy scan at 40% infill (4 rows: rect 40% at 2,6 GeV + gyroid 40% at 2,6 GeV)
+- **Data source:** Geant4 simulation output analysed by `proposal_analysis.py` with fiducial cuts
+- **Will change when rerun:** YES — all values (N_pass, sigma_x, kappa, SE, Delta_kappa) come from simulation. The kappa_M baseline values (4.39, 3.62, 4.10) will change if physics list, step limits, or event counts change.
+
+### Table 2: Ray-trace geometric kurtosis (label: `tab:raytrace`)
+- **Line:** 514-551
+- **Content:** 20 rows (5 geom x 4 infills)
+- **Columns:** Geometry, Infill (%), Cell size (mm), f_hit, kappa_geo (ray), 3(1-f)/f (analytic)
+- **Data source:** `data/sweep0/sweep0_summary.json` from ray-trace script
+- **Will change when rerun:** YES if geometry parameters (cell sizes, wall thickness, beam sigma) are modified. The analytic column values are deterministic formulas.
+
+---
+
+## 5. Hardcoded Numbers from Simulation Results
+
+### Abstract (line 53)
+| Line | Value | Meaning | Source |
+|------|-------|---------|--------|
+| 53 | `8.1\times10^{7}` | Total simulated electrons across all configs | Sum of all N_events across 27 configs (27 x ~3M events or specific per-config counts) |
+
+### Theory section — values from Table 1
+| Line | Value | Meaning | Source |
+|------|-------|---------|--------|
+| 252 | `$\kappa_M = 3.62$` | Moliere kurtosis at 4 GeV solid PLA | Table 1 row: Solid 4 GeV |
+| 255 | `$\kappa = ... = 13.6$` | Predicted kurtosis for binary 40% at 4 GeV | Computed from kappa_M=3.62, f=0.40 |
+| 294 | `$\kappa=4.5$` | Geometric kurtosis for f=0.40 | Formula: 3(1-0.4)/0.4 = 4.5 (deterministic) |
+| 296 | `$\approx 63$` | N_5sigma for f=0.40 detection | Computed from kappa=4.5 (deterministic) |
+| 299 | `$\kappa=0.75$` | Geometric kurtosis for f=0.80 | Formula: 3(1-0.8)/0.8 = 0.75 (deterministic) |
+| 299 | `$N_{5\sigma}\approx 1270$` | N_5sigma for f=0.80 | Computed from kappa=0.75 (deterministic) |
+
+### Simulation framework section
+| Line | Value | Meaning | Source |
+|------|-------|---------|--------|
+| 309 | `RangeFactor~$= 0.04$` | MSC range factor | Code constant (PhysicsList.cc:18) |
+| 309 | `$\SI{0.1}{mm}$` max step | Step limit in PLA | Code constant |
+| 309 | `$\SI{0.2}{rad}$` MscThetaLimit | MSC theta limit | Code constant |
+| 311 | `50\,000 events` | Events per standard config | run_proposal_campaign.sh:8 |
+| 311 | `200\,000 events` | Events per Voronoi config | run_proposal_campaign.sh:134-137 |
+| 313 | `$\SI{315}{mm}$` | PLA radiation length | Material property (deterministic) |
+| 313 | `$\SI{1.24}{g/cm^3}$` | PLA density | Material property (deterministic) |
+| 313 | `$\SI{43}{g/cm^2}$` | PLA X0 in areal density | Computed: 1.24 x 31.5 ≈ 39, but paper says 43 — **possible error** |
+
+### Results section — values from Geant4 simulation
+| Line | Value | Meaning | Source |
+|------|-------|---------|--------|
+| 382 | `$\kappa=4.67\pm0.30$` | Rectilinear 80% kurtosis | Table 1 |
+| 382 | `$\kappa=16.05\pm0.41$` | Rectilinear 20% kurtosis | Table 1 |
+| 382 | `$\kappa=3.62\pm0.26$` | Solid control kurtosis | Table 1 |
+| 389 | `$\kappa_M$ ranges from 3.62 (4 GeV) to 4.39 (2 GeV)` | Solid baseline range | Table 1 |
+| 389 | `$\kappa_M = 3.57$` | Fruhwirth-Liendl analytical prediction | Literature value (fixed) |
+| 394 | `$\Delta\kappa\approx 5$ at 40\%` | Binary lattice excess at 40% | Table 1 |
+| 394 | `$\approx 12$ at 20\%` | Binary lattice excess at 20% | Table 1 |
+| 394 | `$\Delta\kappa\approx 1.6$ at 40\%` | Continuous geometry excess | Table 1 |
+| 394 | `$\Delta\kappa\approx 3.0$ at 40\%` | 3D grid excess | Table 1 |
+| 396 | `$+5.03$ vs.\ $+4.98$ at 40\%` | Rect vs honeycomb Delta_kappa | Table 1 |
+| 396 | `$+1.56$ vs.\ $+1.57$ at 40\%` | Gyroid vs Voronoi Delta_kappa | Table 1 |
+| 424 | `1.00 at $\SI{2}{GeV}$` | Thin-wall enhancement ratio at 2 GeV | Computed from sim results |
+| 424 | `$1.10\pm0.11$ at $\SI{4}{GeV}$` | Thin-wall enhancement ratio at 4 GeV | Computed from sim results |
+| 424 | `1.22 at $\SI{6}{GeV}$` | Thin-wall enhancement ratio at 6 GeV | Computed from sim results |
+| 436 | `12.76 ($\SI{2}{GeV}$)` | Rect 40% kurtosis at 2 GeV | Table 1 |
+| 436 | `8.43 ($\SI{6}{GeV}$)` | Rect 40% kurtosis at 6 GeV | Table 1 |
+| 436 | `$+8.37$` to `$+4.33$` | Rect 40% Delta_kappa at 2/6 GeV | Table 1 |
+| 436 | `$4.40$` | Gyroid 40% kurtosis at 2 GeV | Table 1 |
+| 436 | `$4.39$` | Solid kurtosis at 2 GeV | Table 1 |
+| 436 | `$+0.01$` | Gyroid 40% Delta_kappa at 2 GeV | Table 1 |
+| 436 | `$+1.46$` | Gyroid 40% Delta_kappa at 6 GeV | Table 1 |
+| 441 | `$N=1,2,4,10,20,100$` | Stacked rectilinear N values | Ray-trace (n_scaling_summary.json) |
+| 441 | `$N=1,2,4,8,16$` | Gyroid independent N values | Ray-trace (gyroid_independent_summary.json) |
+| 446 | `$\kappa=11.97$ ($N=1$)` through `$0.133$ ($N=100$)` | Rectilinear N-scaling kappa values | Ray-trace results |
+| 446 | `$\kappa=0.290$ ($N=1$)` through `$0.020$ ($N=16$)` | Gyroid independent kappa values | Ray-trace results |
+| 450 | `$\kappa=11.97$` to `$\kappa=0.133$` | Rectilinear N-scaling endpoints | Ray-trace results |
+| 450 | `$\kappa\approx 0.29$` | Deterministic gyroid constant kappa | Ray-trace results |
+
+### Discussion section
+| Line | Value | Meaning | Source |
+|------|-------|---------|--------|
+| 563 | `$f\approx 0.93$`, `$\kappa_{\mathrm{geo}}\approx 0.23$` | Silicon pixel module | Deterministic formula |
+| 563 | `$\kappa\approx 4.1$` | Total kurtosis for pixel module | Deterministic calculation using kappa_M=3.6 |
+| 565 | `$f\approx 0.7$`, `$\kappa_{\mathrm{geo}}\approx 1.3$` | Barrel layer with gaps | Deterministic formula |
+| 565 | `$\kappa\approx 6.5$` | Total kurtosis for barrel layer | Deterministic calculation |
+| 577 | `$N > 45$` | Required cells for kappa_geo < 0.1 at f=0.40 | Deterministic: 4.5/0.1 = 45 |
+| 577 | `$N>120$` | Required cells at f=0.20 | Deterministic: 12.0/0.1 = 120 |
+
+### Conclusion section
+| Line | Value | Meaning | Source |
+|------|-------|---------|--------|
+| 596 | `$8.1\times10^7$` | Total simulated electrons | Repeated from abstract |
+| 598 | `$\sim$12\%` | Systematic uncertainty for binary lattices | From thin-wall analysis |
+
+### Table 1 data rows (ALL will change if simulations are rerun)
+Lines 478-508 contain 27 rows of simulation results. Every numerical value in these rows (N_pass, sigma_x, sigma_H, sigma_x/sigma_H, kappa, SE, Delta_kappa) comes from simulation output.
+
+### Table 2 data rows (will change if ray-trace parameters change)
+Lines 524-547 contain 20 rows of ray-trace results. The kappa_geo(ray) and f_hit values come from `sweep0_summary.json`. The analytic column (3(1-f)/f) is deterministic.
+
+---
+
+## Notes
+
+1. **X0 areal density discrepancy (line 313):** The paper states `$\SI{43}{g/cm^2}$` for PLA's radiation length in areal density. With density 1.24 g/cm3 and X0 = 315 mm = 31.5 cm, the areal density is 1.24 × 31.5 = 39.06 g/cm2, not 43. This appears to be an error unless Geant4 computes a different X0 value from the stated composition.
+
+2. **Figure generation pipeline:** The 7 paper figures (`figure_{1-7}_*.png`) are generated by `make_all_figures.py` (figures 2-7) and `make_figure1.py` (figure 1) using **synthetic data**, not actual Geant4 ROOT output. When simulations are rerun, the figures should be regenerated from real data using the analysis scripts (`proposal_analysis.py`, `proposal_figures.py`, etc.) and/or the make scripts updated to use ROOT files.
+
+3. **All \includegraphics paths are correct.** All 7 figures exist in `paper/` at the exact paths specified. No fixes needed.
