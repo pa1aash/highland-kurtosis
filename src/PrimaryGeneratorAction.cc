@@ -2,34 +2,40 @@
 
 #include "G4ParticleTable.hh"
 #include "G4SystemOfUnits.hh"
-#include "G4GenericMessenger.hh"
 #include "Randomize.hh"
 
-PrimaryGeneratorAction::PrimaryGeneratorAction()
+PrimaryGeneratorAction::PrimaryGeneratorAction(const G4String& particleName,
+                                               G4double beamSigma,
+                                               G4bool pencilBeam)
     : G4VUserPrimaryGeneratorAction(),
       fGun(nullptr),
-      fBeamSigmaXY(5.0*mm),
-      fUsePencilBeam(false),
-      fParticleName("e-"),
-      fMessenger(nullptr)
+      fBeamSigmaXY(beamSigma),
+      fUsePencilBeam(pencilBeam),
+      fParticleName(particleName)
 {
     fGun = new G4ParticleGun(1);
 
-    G4ParticleDefinition* electron =
-        G4ParticleTable::GetParticleTable()->FindParticle("e-");
-    fGun->SetParticleDefinition(electron);
+    // Apply particle from pre-init configuration
+    G4ParticleDefinition* particle =
+        G4ParticleTable::GetParticleTable()->FindParticle(fParticleName);
+    if (particle) {
+        fGun->SetParticleDefinition(particle);
+    } else {
+        G4cerr << "*** PrimaryGeneratorAction: particle \""
+               << fParticleName << "\" not found, defaulting to e-" << G4endl;
+        fGun->SetParticleDefinition(
+            G4ParticleTable::GetParticleTable()->FindParticle("e-"));
+        fParticleName = "e-";
+    }
 
     fGun->SetParticleEnergy(4.0*GeV);
     fGun->SetParticleMomentumDirection(G4ThreeVector(0, 0, 1));
     fGun->SetParticlePosition(G4ThreeVector(0, 0, -50*mm));
-
-    DefineCommands();
 }
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction()
 {
     delete fGun;
-    delete fMessenger;
 }
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
@@ -61,21 +67,4 @@ void PrimaryGeneratorAction::SetParticle(const G4String& name)
         G4cerr << "*** PrimaryGeneratorAction::SetParticle: particle \""
                << name << "\" not found in G4ParticleTable." << G4endl;
     }
-}
-
-void PrimaryGeneratorAction::DefineCommands()
-{
-    fMessenger = new G4GenericMessenger(this, "/MCS/gun/",
-                                        "Beam control");
-
-    fMessenger->DeclareProperty("pencilBeam", fUsePencilBeam,
-        "Use pencil beam (true) or Gaussian spot (false)");
-
-    fMessenger->DeclarePropertyWithUnit("beamSigma", "mm", fBeamSigmaXY,
-        "Gaussian beam spot sigma (default 5 mm)");
-
-    auto& particleCmd = fMessenger->DeclareMethod("particle",
-        &PrimaryGeneratorAction::SetParticle,
-        "Primary particle type (default e-)");
-    particleCmd.SetCandidates("e- mu-");
 }

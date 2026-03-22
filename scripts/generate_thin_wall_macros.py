@@ -16,8 +16,8 @@ N_EVENTS = 100_000
 
 
 def thickness_label(t):
-    """Format thickness for filenames: 0.1 -> '0.1', 1.0 -> '1', 10.0 -> '10'."""
-    return f"{t:g}"
+    """Format thickness for filenames: 0.1 -> '0p1', 1.0 -> '1', 10.0 -> '10'."""
+    return f"{t:g}".replace(".", "p")
 
 
 def write_macro(thickness_mm, energy_gev):

@@ -35,7 +35,8 @@ def write_macro(filename, tag, geometry, energy_gev, *,
 
     lines.append(f"/MCS/det/geometry {geometry}")
     lines.append(f"/MCS/det/material {material}")
-    lines.append(f"/MCS/gun/particle {particle}")
+    if particle != "e-":
+        lines.append(f"/MCS/gun/particle {particle}")
 
     if infill is not None:
         lines.append(f"/MCS/det/infill {infill}")

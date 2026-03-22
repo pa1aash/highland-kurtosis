@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-conda activate g4highland
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${PROJECT_DIR}/build"
@@ -26,11 +25,11 @@ echo "Phase 1.1: Silicon lattices (4 macros)..."
 for macro in "${MACRO_DIR}"/si_*.mac; do
     name=$(basename "${macro}" .mac)
     echo "  Running: ${name}..."
-    cd "${BUILD_DIR}"
-    ./MCSHighland "${macro}" > "${DATA_SI}/${name}.log" 2>&1
+    cd "${PROJECT_DIR}"
+    "${EXECUTABLE}" "${macro}" > "${DATA_SI}/${name}.log" 2>&1
     for ext in root csv; do
-        if ls "${BUILD_DIR}"/*.${ext} 1>/dev/null 2>&1; then
-            mv "${BUILD_DIR}"/*.${ext} "${DATA_SI}/" 2>/dev/null || true
+        if ls "${PROJECT_DIR}"/*.${ext} 1>/dev/null 2>&1; then
+            mv "${PROJECT_DIR}"/*.${ext} "${DATA_SI}/" 2>/dev/null || true
         fi
     done
     echo "  Done: ${name}"
@@ -44,11 +43,11 @@ echo "Phase 1.2: Tungsten lattices (4 macros)..."
 for macro in "${MACRO_DIR}"/w_*.mac; do
     name=$(basename "${macro}" .mac)
     echo "  Running: ${name}..."
-    cd "${BUILD_DIR}"
-    ./MCSHighland "${macro}" > "${DATA_W}/${name}.log" 2>&1
+    cd "${PROJECT_DIR}"
+    "${EXECUTABLE}" "${macro}" > "${DATA_W}/${name}.log" 2>&1
     for ext in root csv; do
-        if ls "${BUILD_DIR}"/*.${ext} 1>/dev/null 2>&1; then
-            mv "${BUILD_DIR}"/*.${ext} "${DATA_W}/" 2>/dev/null || true
+        if ls "${PROJECT_DIR}"/*.${ext} 1>/dev/null 2>&1; then
+            mv "${PROJECT_DIR}"/*.${ext} "${DATA_W}/" 2>/dev/null || true
         fi
     done
     echo "  Done: ${name}"
@@ -62,11 +61,11 @@ echo "Phase 1.3: Muons (2 macros)..."
 for macro in "${MACRO_DIR}"/muon_*.mac; do
     name=$(basename "${macro}" .mac)
     echo "  Running: ${name}..."
-    cd "${BUILD_DIR}"
-    ./MCSHighland "${macro}" > "${DATA_MU}/${name}.log" 2>&1
+    cd "${PROJECT_DIR}"
+    "${EXECUTABLE}" "${macro}" > "${DATA_MU}/${name}.log" 2>&1
     for ext in root csv; do
-        if ls "${BUILD_DIR}"/*.${ext} 1>/dev/null 2>&1; then
-            mv "${BUILD_DIR}"/*.${ext} "${DATA_MU}/" 2>/dev/null || true
+        if ls "${PROJECT_DIR}"/*.${ext} 1>/dev/null 2>&1; then
+            mv "${PROJECT_DIR}"/*.${ext} "${DATA_MU}/" 2>/dev/null || true
         fi
     done
     echo "  Done: ${name}"
@@ -80,11 +79,11 @@ echo "Phase 1.4: Thickness variation (4 macros)..."
 for macro in "${MACRO_DIR}"/thick_*.mac; do
     name=$(basename "${macro}" .mac)
     echo "  Running: ${name}..."
-    cd "${BUILD_DIR}"
-    ./MCSHighland "${macro}" > "${DATA_TH}/${name}.log" 2>&1
+    cd "${PROJECT_DIR}"
+    "${EXECUTABLE}" "${macro}" > "${DATA_TH}/${name}.log" 2>&1
     for ext in root csv; do
-        if ls "${BUILD_DIR}"/*.${ext} 1>/dev/null 2>&1; then
-            mv "${BUILD_DIR}"/*.${ext} "${DATA_TH}/" 2>/dev/null || true
+        if ls "${PROJECT_DIR}"/*.${ext} 1>/dev/null 2>&1; then
+            mv "${PROJECT_DIR}"/*.${ext} "${DATA_TH}/" 2>/dev/null || true
         fi
     done
     echo "  Done: ${name}"

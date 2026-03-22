@@ -5,12 +5,12 @@
 #include "G4ParticleGun.hh"
 #include "G4String.hh"
 
-class G4GenericMessenger;
-
 class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
 {
 public:
-    PrimaryGeneratorAction();
+    PrimaryGeneratorAction(const G4String& particleName = "e-",
+                           G4double beamSigma = 5.0,
+                           G4bool pencilBeam = false);
     ~PrimaryGeneratorAction() override;
 
     void GeneratePrimaries(G4Event* event) override;
@@ -20,13 +20,10 @@ public:
     G4String GetParticleName() const { return fParticleName; }
 
 private:
-    void DefineCommands();
-
     G4ParticleGun* fGun;
     G4double fBeamSigmaXY;
     G4bool   fUsePencilBeam;
     G4String fParticleName;
-    G4GenericMessenger* fMessenger;
 };
 
 #endif

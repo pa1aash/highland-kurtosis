@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-conda activate g4highland
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${PROJECT_DIR}/build"
@@ -38,12 +37,12 @@ for opt in "${EM_OPTIONS[@]}"; do
         out_name=$(echo "${macro_name}" | sed "s/^model_/model_opt${opt}_/")
         echo "  Running: ${out_name} (EM option ${opt})..."
 
-        cd "${BUILD_DIR}"
-        ./MCSHighland "${MACRO_DIR}/${macro_name}.mac" "${SEED}" "${opt}" \
+        cd "${PROJECT_DIR}"
+        "${EXECUTABLE}" "${MACRO_DIR}/${macro_name}.mac" "${SEED}" "${opt}" \
             > "${DATA_DIR}/${out_name}.log" 2>&1
 
         # The macro writes fileName = model_{geom}_4GeV.root; rename to include opt
-        src_root="${BUILD_DIR}/${macro_name}.root"
+        src_root="${PROJECT_DIR}/${macro_name}.root"
         if [ -f "${src_root}" ]; then
             mv "${src_root}" "${DATA_DIR}/${out_name}.root"
         fi
