@@ -450,6 +450,12 @@ Runner script: `scripts/run_stacked_layers.sh` — runs all 5 macros sequentiall
 - **Output:** `results/bl4s_predictions/bl4s_predictions.json`
 - **Constants:** `KAPPA_M_G4 = {2.0: 4.394, 4.0: 3.616, 6.0: 4.097}`, `THIN_WALL_ENHANCEMENT = {2.0: 1.00, 4.0: 1.10, 6.0: 1.22}`, `N_eff = 30,000`
 
+### cut_variation_study.py (analysis/)
+- **Purpose:** Sweeps energy, angle, and fiducial cut thresholds one at a time to verify kappa stability. Produces 3-panel robustness figure and JSON results.
+- **Input:** Single ROOT file (default: `data/proposal/rect_40pct_4GeV.root`)
+- **Output:** `paper/figure_cut_robustness.{png,pdf}`, `results/cut_variation_results.json`
+- **Constants:** Default cuts match `analyze_mcs.py` (energy_frac=0.9, angle_sigma=10, fiducial_x=5 mm). Bootstrap: 1000 resamples.
+
 ### make_all_figures.py (root)
 - **Purpose:** Master script generating NIM-A publication figures 2-7 using **synthetic data** (not ROOT files).
 - **Output:** `figure_{2-7}_*.png` in project root
