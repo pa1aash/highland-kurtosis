@@ -98,23 +98,23 @@ def main():
     print("[2] Loaded cut-variation results")
 
     # ------------------------------------------------------------------
-    # 3. Load model comparison ROOT files (SOLID controls) for kappa_M
+    # 3. Load model comparison ROOT files (RECT40) for kappa
     # ------------------------------------------------------------------
-    # NOTE: The rect40 model comparison files have incorrect effective
-    # infill (~20% instead of 40%, mean pla_path ~1.96 mm vs ~4.03 mm).
-    # Use solid control files instead — these have correct geometry and
-    # give the Moliere kurtosis kappa_M for each physics option.
+    # The rect40 model comparison files now have correct geometry
+    # (cellSize=1.78mm giving ~40% effective infill).  We use these
+    # directly: max|kappa_optN - kappa_opt4| gives the Geant4 model
+    # systematic on the full lattice kappa (not just kappa_M).
     model_dir = base / "data" / "phase04_model_comparison"
     model_kappas = {}
-    print("[3] Loading model comparison ROOT files (solid controls)...")
+    print("[3] Loading model comparison ROOT files (rect40, corrected geometry)...")
     for opt in [0, 3, 4]:
-        fpath = model_dir / f"model_opt{opt}_solid_4GeV.root"
+        fpath = model_dir / f"model_opt{opt}_rect40_4GeV.root"
         if fpath.exists() and HAS_UPROOT:
             kappa, se, n = load_root_kappa(fpath, 4.0)
             model_kappas[opt] = {"kappa": round(kappa, 4), "se": round(se, 4), "n": n}
-            print(f"    opt{opt} solid: kappa_M = {kappa:.4f} +/- {se:.4f}  (N = {n})")
+            print(f"    opt{opt} rect40: kappa = {kappa:.4f} +/- {se:.4f}  (N = {n})")
         else:
-            print(f"    opt{opt} solid: MISSING or uproot unavailable")
+            print(f"    opt{opt} rect40: MISSING or uproot unavailable")
 
     # ------------------------------------------------------------------
     # 4. Compute each systematic contribution
@@ -146,20 +146,14 @@ def main():
         "method_plain": "|kappa_M(0.4mm) - kappa_M(10mm)| at 4 GeV",
     })
 
-    # (b) Highland log correction: |(1-2*epsilon)^2 - 1|, epsilon=0.076*ln(0.4/315)
-    ell_wall = 0.4
-    epsilon = 0.076 * np.log(ell_wall / PLA_X0_MM)
-    highland_log = abs((1.0 - 2.0 * epsilon) ** 2 - 1.0)
-    print(f"\n  (b) Highland log correction (analytic)")
-    print(f"      epsilon = 0.076 * ln({ell_wall}/{PLA_X0_MM}) = {epsilon:.4f}")
-    print(f"      |(1 - 2*eps)^2 - 1| = |({1-2*epsilon:.4f})^2 - 1| = {highland_log:.4f}")
-    budget.append({
-        "source": r"Highland log correction",
-        "source_plain": "Highland log correction",
-        "value": round(highland_log, 4),
-        "method": r"$|(1-2\epsilon)^2 - 1|$; $\epsilon = 0.076\ln(\ell/X_0)$",
-        "method_plain": "|(1-2*eps)^2 - 1|, eps = 0.076*ln(l/X0)",
-    })
+    # (b) Highland log correction: REMOVED (Session 12 audit)
+    #     This was |(1-2*epsilon)^2 - 1| = 3.05, but it is a fractional
+    #     correction to the Highland *variance*, not an absolute kurtosis
+    #     shift.  Moreover, the thin-wall Geant4 simulation (a) already
+    #     includes the Highland log-term physics, so adding (b) on top
+    #     would double-count.
+    print("\n  (b) Highland log correction — REMOVED (double-counts with thin-wall; "
+          "fractional variance correction, not absolute kurtosis shift)")
 
     # (c) Energy cut threshold
     e_sweep = cut_var["sweeps"]["energy_frac"]
@@ -180,28 +174,32 @@ def main():
         "method_plain": "max|kappa_var - kappa_def|, E_frac in [0.85,0.98]",
     })
 
-    # (d) Angle cut threshold — restricted to 7-15σ (bracketing default 10σ).
-    #     Excludes 5σ (truncates non-Gaussian tails) and 20σ (admits nuclear
-    #     scattering outliers that the cut is designed to remove).
+    # (d) Angle cut threshold — half-spread between 7σ and 13σ.
+    #     The old max-deviation approach (10σ→15σ, δ=8.52) conflated real
+    #     Molière-tail physics with systematic uncertainty.  The symmetric
+    #     half-spread |κ(13σ) − κ(7σ)|/2 around the 10σ default gives a
+    #     fairer estimate.  13σ is interpolated linearly from the 10σ/15σ
+    #     sweep points.
     a_sweep = cut_var["sweeps"]["angle_sigma"]
-    a_def_k = next(a["kappa"] for a in a_sweep
-                   if abs(a["value"] - defaults["angle_sigma"]) < 0.001)
-    a_deltas = [(a["value"], abs(a["kappa"] - a_def_k)) for a in a_sweep
-                if abs(a["value"] - defaults["angle_sigma"]) > 0.001
-                and 7.0 <= a["value"] <= 15.0]
-    delta_acut = max(d for _, d in a_deltas)
-    worst_aval = max(a_deltas, key=lambda x: x[1])
-    print(f"\n  (d) Angle cut threshold (7-15 sigma only)")
-    print(f"      Default kappa (Nsig={defaults['angle_sigma']}): {a_def_k:.4f}")
-    for val, delt in sorted(a_deltas):
-        print(f"      Nsig={val}: delta = {delt:.4f}")
-    print(f"      Worst at Nsig={worst_aval[0]}: delta = {worst_aval[1]:.4f}")
+    a_by_val = {a["value"]: a["kappa"] for a in a_sweep}
+    k7 = a_by_val[7.0]
+    # Interpolate kappa at 13σ between 10σ and 15σ
+    k10 = a_by_val[10.0]
+    k15 = a_by_val[15.0]
+    k13 = k10 + (13.0 - 10.0) / (15.0 - 10.0) * (k15 - k10)
+    delta_acut = abs(k13 - k7) / 2.0
+    print(f"\n  (d) Angle cut threshold (half-spread 7-13 sigma)")
+    print(f"      kappa(7 sigma)  = {k7:.4f}")
+    print(f"      kappa(10 sigma) = {k10:.4f}")
+    print(f"      kappa(15 sigma) = {k15:.4f}")
+    print(f"      kappa(13 sigma) = {k13:.4f}  (interpolated)")
+    print(f"      delta = |kappa(13) - kappa(7)| / 2 = {delta_acut:.4f}")
     budget.append({
         "source": r"Angle cut threshold",
         "source_plain": "Angle cut threshold",
         "value": round(delta_acut, 4),
-        "method": r"$\max|\kappa_\mathrm{var} - \kappa_\mathrm{def}|$; $N_\sigma\in[7,15]$",
-        "method_plain": "max|kappa_var - kappa_def|, Nsig in [7,15]",
+        "method": r"$|\kappa(13\sigma) - \kappa(7\sigma)|/2$; 13$\sigma$ interpolated",
+        "method_plain": "|kappa(13sig) - kappa(7sig)| / 2; 13sig interpolated",
     })
 
     # (e) Fiducial region
@@ -235,22 +233,20 @@ def main():
         "method_plain": "Conservative; kappa insensitive to beam sigma",
     })
 
-    # (g) Geant4 MCS model — from solid control files (kappa_M).
-    #     The rect40 model files have incorrect geometry (~20% effective
-    #     infill instead of 40%), so we use the solid controls which give
-    #     the Moliere kurtosis kappa_M for each physics option directly.
+    # (g) Geant4 MCS model — from rect40 files (corrected geometry).
+    #     max|kappa_optN - kappa_opt4| on the full lattice observable.
     if len(model_kappas) == 3:
         k0 = model_kappas[0]["kappa"]
         k3 = model_kappas[3]["kappa"]
         k4 = model_kappas[4]["kappa"]
         delta_g4 = max(abs(k0 - k4), abs(k3 - k4))
-        print(f"\n  (g) Geant4 MCS model (from solid controls)")
-        print(f"      opt0 (Urban) solid:  kappa_M = {k0:.4f}")
-        print(f"      opt3 solid:          kappa_M = {k3:.4f}")
-        print(f"      opt4 (EMZ) solid:    kappa_M = {k4:.4f}")
+        print(f"\n  (g) Geant4 MCS model (from rect40, corrected geometry)")
+        print(f"      opt0 (Urban) rect40:  kappa = {k0:.4f}")
+        print(f"      opt3 rect40:          kappa = {k3:.4f}")
+        print(f"      opt4 (EMZ) rect40:    kappa = {k4:.4f}")
         print(f"      |opt0 - opt4| = {abs(k0-k4):.4f}")
         print(f"      |opt3 - opt4| = {abs(k3-k4):.4f}")
-        print(f"      max|delta kappa_M| = {delta_g4:.4f}")
+        print(f"      max|delta kappa| = {delta_g4:.4f}")
     else:
         delta_g4 = 0.0
         print(f"\n  (g) Geant4 MCS model: could not compute (missing files)")
@@ -258,8 +254,8 @@ def main():
         "source": r"Geant4 MCS model",
         "source_plain": "Geant4 MCS model",
         "value": round(delta_g4, 4),
-        "method": r"$\max|\kappa_{M,i} - \kappa_{M,\mathrm{opt4}}|$; solid controls",
-        "method_plain": "max|kappa_M_optN - kappa_M_opt4| from solid controls",
+        "method": r"$\max|\kappa_i - \kappa_\mathrm{opt4}|$; rect40 corrected geometry",
+        "method_plain": "max|kappa_optN - kappa_opt4| from rect40 (corrected geometry)",
     })
 
     # (h) Voxelisation resolution
@@ -367,15 +363,16 @@ def main():
         "total_systematic": round(total_syst, 4),
         "statistical": round(stat_se, 4),
         "total_combined": round(total_combined, 4),
-        "model_comparison_solid": {f"opt{k}": v for k, v in model_kappas.items()},
+        "model_comparison_rect40": {f"opt{k}": v for k, v in model_kappas.items()},
         "thin_wall": {
             "kappa_M_04mm_4GeV": kM_04,
             "kappa_M_10mm_4GeV": kM_10,
         },
-        "highland_log": {
-            "epsilon": round(epsilon, 4),
-            "wall_thickness_mm": ell_wall,
-            "X0_mm": PLA_X0_MM,
+        "notes": {
+            "highland_log_removed": "Double-counts with thin-wall correction; "
+                                    "fractional variance correction, not absolute kurtosis shift",
+            "angle_cut_method": "Half-spread |kappa(13sig)-kappa(7sig)|/2; "
+                                "13sig linearly interpolated from 10sig/15sig sweep",
         },
     }
 

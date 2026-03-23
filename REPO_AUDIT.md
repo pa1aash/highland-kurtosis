@@ -300,6 +300,7 @@ Generates **2 macro files** to `macros/generated/phase04_model_comparison/` for 
 | Geometries | solid PLA control, rectilinear 40% infill |
 | Energy | 4 GeV |
 | Events | 100,000 per macro |
+| Rect40 geometry | cellSize=1.78 mm, wallThickness=0.4 mm (matches proposal) |
 | Output naming | `model_solid_4GeV`, `model_rect40_4GeV` |
 
 The EM physics option (0=Urban, 3=option3, 4=option4) is a command-line argument, not a macro command. Runner script `scripts/run_model_comparison.sh` loops over all 3 options × 2 geometries = 6 runs, builds the project, and outputs to `data/phase04_model_comparison/` with naming `model_opt{N}_{geom}_4GeV.root`.
@@ -330,6 +331,10 @@ Runner script: `scripts/run_phase1.sh` — runs all 14 macros sequentially, outp
 | `stacked_rect_20pct_20layer_4GeV.mac` | 20 | PLA, rectilinear 20%, 4 GeV, 100k events |
 
 Runner script: `scripts/run_stacked_layers.sh` — runs all 5 macros sequentially, outputs to `data/phase3_stacked/`.
+
+**Analysis:** `analysis/analyze_stacked_layers.py` — loads all 5 ROOT files, applies standard cuts, computes κ with bootstrap SE, compares to ray-trace 1/N predictions. Outputs: `paper/figure_6_n_scaling_with_geant4.{png,pdf}`, `results/phase3_stacked_results.json`.
+
+**Bug fix (2026-03-23):** All 5 macros had cellSize=1.78mm (40% infill) instead of 3.79mm (20% infill). Fixed. Data must be regenerated. Diagnostic script: `analysis/diagnose_stacked.py`.
 
 ### Complete macro command interface
 
@@ -455,6 +460,18 @@ Runner script: `scripts/run_stacked_layers.sh` — runs all 5 macros sequentiall
 - **Input:** Single ROOT file (default: `data/proposal/rect_40pct_4GeV.root`)
 - **Output:** `paper/figure_cut_robustness.{png,pdf}`, `results/cut_variation_results.json`
 - **Constants:** Default cuts match `analyze_mcs.py` (energy_frac=0.9, angle_sigma=10, fiducial_x=5 mm). Bootstrap: 1000 resamples.
+
+### analyze_phase1.py (analysis/)
+- **Purpose:** Phase 1 universality tests: multi-material (Si, W), muon vs electron, and thickness variation. Validates universal kurtosis equation κ = (3 + κ_M)/f − 3 across materials and particles.
+- **Input:** `data/phase1_silicon/si_{solid,rect_40/60/80pct}_4GeV.root`, `data/phase1_tungsten/w_{solid,rect_40/60/80pct}_4GeV.root`, `data/phase1_muons/muon_{solid,rect_40pct}_4GeV.root`, `data/phase1_thickness/thick_{5,10,20,40}mm_rect_40pct_4GeV.root`, PLA baseline from `data/phase04_model_comparison/model_opt4_{solid,rect40}_4GeV.root`
+- **Output:** `paper/figure_multi_material.{png,pdf}`, `paper/figure_muon_comparison.{png,pdf}`, `paper/figure_thickness_independence.{png,pdf}`, `results/phase1_results.json`
+- **Material X0:** PLA=315mm, Si=93.7mm, W=3.5mm
+
+### analyze_model_comparison.py (analysis/)
+- **Purpose:** Compares Geant4 EM physics options 0, 3, 4 on solid and rect40 geometries. Computes κ_M (solid), κ_total (rect40), and κ_geo = (κ_total − κ_M)/(1 + κ_M/3) for each option.
+- **Input:** `data/phase04_model_comparison/model_opt{0,3,4}_{solid,rect40}_4GeV.root`
+- **Output:** `paper/figure_model_comparison.{png,pdf}`, `results/model_comparison_results.json`
+- **Key finding:** κ_geo is model-independent (geometric only). All three options agree: κ_geo ≈ 4.3–4.9 (spread 0.63, within 1σ).
 
 ### systematic_uncertainty.py (analysis/)
 - **Purpose:** Computes formal systematic uncertainty budget for the representative configuration (rect 40% 4 GeV). Combines thin-wall results, cut-variation sweeps, and model comparison ROOT files.
@@ -593,3 +610,6 @@ Path-length distributions for 1M rays each:
 4. ~~**sweep2_infill_scan.mac incomplete:**~~ **Fixed** — deleted the incomplete file; `generate_macros.py` creates the real sweep2 macros in `macros/generated/`.
 5. ~~**Duplicate figure PNGs in project root:**~~ **Fixed** — deleted 7 duplicate `figure_*` PNGs from project root; canonical copies remain in `paper/`.
 6. ~~**PLA X0 areal density error in paper:**~~ **Fixed** — `paper/main.tex` line 313 corrected from 43 g/cm² to 39 g/cm² (1.24 g/cm³ × 31.5 cm = 39.06 g/cm²).
+7. **κ_geo extraction formula (Session 12):** `analyze_model_comparison.py` fixed to use `κ_geo = (κ_total − κ_M)/(1 + κ_M/3)` (from universal equation) instead of simple subtraction `κ_total − κ_M`. All three EM physics options now give consistent κ_geo ≈ 4.3–4.9 (spread 0.63, within 1σ). Old formula gave spread 3.19.
+8. **Systematic budget corrections (Session 12):** `analysis/systematic_uncertainty.py` updated: (a) Highland log correction removed (double-counts with thin-wall Geant4 sim; was misapplying a fractional variance correction as absolute kurtosis shift); (b) Angle cut systematic changed from max-deviation 10σ→15σ (δκ=8.52) to symmetric half-spread |κ(13σ)−κ(7σ)|/2 (δκ=4.32). Total systematic: 10.83 → 7.35.
+9. **Table 2 stale values (Session 12 audit):** 8 of 20 entries in paper Table 2 have stale f_hit/κ_geo values from an older ray-trace. Deferred to Session 19.

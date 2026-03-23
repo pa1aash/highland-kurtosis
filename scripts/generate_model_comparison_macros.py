@@ -27,7 +27,11 @@ CONFIGS = [
         "tag": "model_rect40_4GeV",
         "geometry": "rectilinear",
         "description": "Rectilinear 40% infill",
-        "extra_cmds": "/MCS/det/infill 40\n",
+        "extra_cmds": (
+            "/MCS/det/infill 40\n"
+            "/MCS/det/cellSize 1.78 mm\n"
+            "/MCS/det/wallThickness 0.4 mm\n"
+        ),
     },
 ]
 
