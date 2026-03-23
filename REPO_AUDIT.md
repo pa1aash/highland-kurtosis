@@ -456,6 +456,12 @@ Runner script: `scripts/run_stacked_layers.sh` — runs all 5 macros sequentiall
 - **Output:** `paper/figure_cut_robustness.{png,pdf}`, `results/cut_variation_results.json`
 - **Constants:** Default cuts match `analyze_mcs.py` (energy_frac=0.9, angle_sigma=10, fiducial_x=5 mm). Bootstrap: 1000 resamples.
 
+### systematic_uncertainty.py (analysis/)
+- **Purpose:** Computes formal systematic uncertainty budget for the representative configuration (rect 40% 4 GeV). Combines thin-wall results, cut-variation sweeps, and model comparison ROOT files.
+- **Input:** `data/phase01_thin_wall/thin_wall_results.json`, `results/cut_variation_results.json`, `data/phase04_model_comparison/model_opt{0,3,4}_rect40_4GeV.root`
+- **Output:** `paper/table_systematics.tex`, `results/systematic_budget.json`, stdout summary table
+- **Constants:** Standard cuts matching `analyze_mcs.py` defaults. Beam profile estimate 0.1, voxelisation estimate 0.05.
+
 ### make_all_figures.py (root)
 - **Purpose:** Master script generating NIM-A publication figures 2-7 using **synthetic data** (not ROOT files).
 - **Output:** `figure_{2-7}_*.png` in project root
