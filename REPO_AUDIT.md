@@ -332,7 +332,7 @@ Runner script: `scripts/run_phase1.sh` — runs all 14 macros sequentially, outp
 
 Runner script: `scripts/run_stacked_layers.sh` — runs all 5 macros sequentially, outputs to `data/phase3_stacked/`.
 
-**Analysis:** `analysis/analyze_stacked_layers.py` — loads all 5 ROOT files, applies standard cuts, computes κ with bootstrap SE, compares to ray-trace 1/N predictions. Outputs: `paper/figure_6_n_scaling_with_geant4.{png,pdf}`, `results/phase3_stacked_results.json`.
+**Analysis:** `analysis/analyze_stacked_layers.py` — loads all 5 ROOT files, applies standard cuts, extracts geometric kurtosis κ_geo = (κ_total − κ_M) / (1 + κ_M/3) where κ_M is measured from solid control (`data/proposal/control_solid_4GeV.root`). Compares κ_geo to ray-trace 1/N predictions. Outputs: `paper/figure_6_n_scaling_with_geant4.{png,pdf}`, `results/phase3_stacked_results.json`.
 
 **Bug fix (2026-03-23):** All 5 macros had cellSize=1.78mm (40% infill) instead of 3.79mm (20% infill). Fixed. Data must be regenerated. Diagnostic script: `analysis/diagnose_stacked.py`.
 
