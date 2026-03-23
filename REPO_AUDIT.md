@@ -69,7 +69,8 @@ g4-lattice-mcs-main/
 │   ├── generate_theory_comparison.py # Highland vs mixture vs Geant4
 │   ├── n_scaling_analysis.py   # 1/N scaling law analysis
 │   ├── bl4s_predictions.py     # BL4S measurement predictions
-│   └── universal_equation_final.py   # Universal equation validation
+│   ├── universal_equation_final.py   # Universal equation validation
+│   └── analyze_thin_wall.py   # Thin-wall κ_M parametrisation (phase01)
 │
 ├── data/                       # Simulation data (partially populated)
 │   └── sweep0/                 # Ray-trace results only
@@ -396,6 +397,14 @@ Runner script: `scripts/run_stacked_layers.sh` — runs all 5 macros sequentiall
 - **Quality cuts:** Energy cut `>0.9*p`, angle cut `10*σ_Highland`, fiducial `|x|<5, |y|<10`
 - **Bootstrap:** 2000 resamples, seed=42
 - **PLA hit threshold:** `pla_path > 0.1 mm`
+
+### analyze_thin_wall.py (analysis/)
+- **Purpose:** Thin-wall Molière kurtosis parametrisation. Analyses solid PLA slabs at 9 thicknesses (0.1–10 mm) × 3 energies (2/4/6 GeV) to extract κ_M(ℓ/X₀, E) and fit κ_M = a + b·ln(ℓ/X₀).
+- **Input:** 27 ROOT files from `data/phase01_thin_wall/`
+- **Output:** `data/phase01_thin_wall/thin_wall_results.json`, `thin_wall_fits.json`, `thin_wall_recomputed_table1.json`, `paper/figure_thin_wall_parametrisation.{png,pdf}`
+- **Quality cuts:** Energy cut `>0.9*p`, angle cut `10*σ_Highland(thickness)`, fiducial `|x|<5, |y|<10`
+- **Bootstrap:** 1000 resamples, seed=42
+- **Key result:** κ_M(0.4 mm) / κ_M(10 mm) ≈ 1.26–1.34, replaces ±12% systematic band
 
 ### ray_trace_sweep0.py (scripts/ only — duplicate in analysis/ deleted)
 - **Purpose:** Pure-geometry ray-tracing to predict path-length distributions and kurtosis without Geant4.
